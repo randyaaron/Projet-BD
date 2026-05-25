@@ -1,0 +1,13 @@
+{
+  "name": "school/primary-backend",
+  "type": "project",
+  "description": "Backend gestion ecole primaire (Laravel + PostgreSQL + Sanctum).",
+  "keywords": ["laravel", "sanctum", "postgresql", "school"],
+  "license": "MIT",
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^11.0",
+    "laravel/sanctum": "^4.0"
+  }
+}
+
