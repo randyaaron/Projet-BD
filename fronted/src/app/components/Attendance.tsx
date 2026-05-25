@@ -11,6 +11,7 @@ export function Attendance() {
     setError('');
     try {
       const token = localStorage.getItem('sanctum_token');
+      // @ts-ignore
       const apiUrl = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${apiUrl}/api/teacher/attendance`, {
         headers: {

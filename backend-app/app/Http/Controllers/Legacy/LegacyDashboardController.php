@@ -50,23 +50,31 @@ class LegacyDashboardController extends Controller
                 ];
             });
 
-        // 4. Presence hebdomadaire (Simulation basée sur le total)
+        // 4. Presence hebdomadaire (Données réelles basées sur la table attendances)
         $today = new \DateTime();
         $weeklyAttendance = [];
+        $daysFr = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
         for ($i = 6; $i >= 0; $i--) {
             $date = (clone $today)->modify("-$i days");
-            // S'il n'y a pas d'élèves, on met 0
-            $presents = $totalEleves > 0 ? rand(intval($totalEleves * 0.8), intval($totalEleves * 0.98)) : 0;
-            $absents = $totalEleves > 0 ? $totalEleves - $presents : 0;
+            $dateStr = $date->format('Y-m-d');
             
-            // Pas de cours le dimanche (0)
-            if ($date->format('w') == 0) {
+            if ($date->format('w') == 0) { // Pas de cours le dimanche
                 $presents = 0;
                 $absents = 0;
+            } else {
+                try {
+                    $absents = DB::table('attendances')
+                        ->whereDate('date', $dateStr)
+                        ->where('status', 'ABSENT')
+                        ->count();
+                } catch (\Exception $e) {
+                    $absents = 0;
+                }
+                $presents = max(0, $totalEleves - $absents);
             }
             
             $weeklyAttendance[] = [
-                'jour' => config('app.days_fr')[$date->format('w')] ?? $date->format('D d/m'),
+                'jour' => $daysFr[$date->format('w')],
                 'presents' => $presents,
                 'absents' => $absents
             ];

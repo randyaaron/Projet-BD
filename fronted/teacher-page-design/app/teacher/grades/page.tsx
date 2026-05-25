@@ -4,358 +4,491 @@ import { useState, useEffect } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import { 
-  ChevronDown, 
   Save, 
-  Download, 
-  Search,
   Check,
-  AlertCircle,
-  Loader2
+  Loader2,
+  UserCircle,
+  FileText
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'next/navigation';
 
 interface Student {
+  matricule: number;
+  nom: string;
+  prenom: string;
+}
+
+interface Subject {
   id: number;
-  name: string;
+  libelle: string;
 }
 
 interface Assessment {
   id: number;
   title: string;
-  date: string;
+  type: string;
   total_points: number;
-  school_class_id: number;
-  grades: { student_id: number, score: string }[];
+  subject_id: number;
 }
 
 export default function GradesPage() {
-  const [classes, setClasses] = useState<any[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const searchParams = useSearchParams();
+  const [uid, setUid] = useState<string | null>(null);
+
   const [students, setStudents] = useState<Student[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [gradesMap, setGradesMap] = useState<Record<string, Record<string, string>>>({}); // assessmentId -> studentId -> score
-  const [originalGradesMap, setOriginalGradesMap] = useState<Record<string, Record<string, string>>>({});
   
-  const [searchQuery, setSearchQuery] = useState('');
+  // States
+  const [evalType, setEvalType] = useState<string>('Examen'); // Examen, Contrôle, Devoir
+  
+  // For Examen (Student -> Subjects)
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [examenGradesMap, setExamenGradesMap] = useState<Record<number, Record<number, string>>>({}); // studentId -> subjectId -> note
+  
+  // For Devoir/Contrôle (Assessment -> Students)
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<string>('');
+  const [assessmentGradesMap, setAssessmentGradesMap] = useState<Record<number, string>>({}); // studentId -> note
+  
   const [fetching, setFetching] = useState(true);
+  const [fetchingGrades, setFetchingGrades] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    const initData = async () => {
-      const token = localStorage.getItem('sanctum_token');
+    let userId = searchParams.get('userId');
+    if (!userId && typeof window !== 'undefined') {
+      userId = localStorage.getItem('user_id');
+    }
+    setUid(userId);
+  }, [searchParams]);
+
+  // Initial Context Load
+  useEffect(() => {
+    if (!uid) return;
+
+    const fetchContext = async () => {
       try {
-        const clsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/classes`, {
-          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+        setFetching(true);
+        // Fetch base context (students, subjects, examen grades from Evaluation table)
+        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        if (!resCtx.ok) throw new Error('Erreur de chargement');
+        const ctxData = await resCtx.json();
+        
+        if (ctxData.error) {
+          setErrorMsg(ctxData.error);
+          return;
+        }
+
+        setStudents(ctxData.students || []);
+        
+        // Context endpoint returns subjects as idCours. We standardize to id for subjects.
+        const mappedSubjects = (ctxData.subjects || []).map((s: any) => ({
+          id: s.idCours || s.id,
+          libelle: s.libelle
+        }));
+        setSubjects(mappedSubjects);
+
+        // Load Examen Grades map
+        const initExamenMap: Record<number, Record<number, string>> = {};
+        ctxData.students.forEach((s: Student) => {
+          initExamenMap[s.matricule] = {};
         });
-        if (clsRes.ok) {
-          const clsData = await clsRes.json();
-          const parsedClasses = Array.isArray(clsData) ? clsData : clsData.classes || [];
-          setClasses(parsedClasses);
-          if (parsedClasses.length > 0) {
-            const defaultId = parsedClasses[0].school_class_id || parsedClasses[0].id;
-            setSelectedClass(String(defaultId));
-          }
+        (ctxData.grades || []).forEach((g: any) => {
+          if (!initExamenMap[g.matricule]) initExamenMap[g.matricule] = {};
+          initExamenMap[g.matricule][g.idCours] = String(g.note);
+        });
+        setExamenGradesMap(initExamenMap);
+
+        // Fetch assessments from assessments table
+        const resAss = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/context/${uid}`);
+        if (resAss.ok) {
+          const assData = await resAss.json();
+          setAssessments(assData.assessments || []);
+        }
+
+        if (ctxData.students.length > 0) {
+          setSelectedStudent(ctxData.students[0]);
         }
       } catch (err) {
         console.error(err);
+        setErrorMsg('Impossible de charger les données.');
       } finally {
         setFetching(false);
       }
     };
-    initData();
-  }, []);
 
+    fetchContext();
+  }, [uid]);
+
+  // Load specific assessment grades when selected
   useEffect(() => {
-    if (!selectedClass) return;
-    const fetchClassData = async () => {
-      const token = localStorage.getItem('sanctum_token');
+    if (!uid || !selectedAssessmentId || evalType === 'Examen') return;
+
+    const fetchAssessmentGrades = async () => {
       try {
-        setFetching(true);
-        const [stuRes, assRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/classes/${selectedClass}/students`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/assessments`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-          })
-        ]);
-
-        if (stuRes.ok) {
-          const stuData = await stuRes.json();
-          setStudents(stuData.students || []);
-        }
-
-        if (assRes.ok) {
-          const assData = await assRes.json();
-          // Assuming pagination format: { data: [...] }
-          const allAssessments = assData.data || [];
-          const classAssessments = allAssessments.filter((a: any) => String(a.school_class_id) === selectedClass);
-          setAssessments(classAssessments);
-
-          const initialGrades: Record<string, Record<string, string>> = {};
-          classAssessments.forEach((ass: Assessment) => {
-            initialGrades[ass.id] = {};
-            (ass.grades || []).forEach(g => {
-              initialGrades[ass.id][g.student_id] = String(g.score);
-            });
-          });
-          setGradesMap(initialGrades);
-          setOriginalGradesMap(JSON.parse(JSON.stringify(initialGrades)));
-        }
-      } catch (e) {
-        console.error(e);
+        setFetchingGrades(true);
+        const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`);
+        if (!res.ok) throw new Error('Erreur chargement notes');
+        const data = await res.json();
+        
+        const initMap: Record<number, string> = {};
+        (data.grades || []).forEach((g: any) => {
+          initMap[g.student_id] = String(g.score);
+        });
+        setAssessmentGradesMap(initMap);
+      } catch (err) {
+        console.error(err);
       } finally {
-        setFetching(false);
+        setFetchingGrades(false);
       }
     };
-    fetchClassData();
-  }, [selectedClass]);
 
-  const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    fetchAssessmentGrades();
+  }, [uid, selectedAssessmentId, evalType]);
 
-  const getGradeColor = (gradeStr: string | null | undefined, maxPoints: number) => {
-    if (!gradeStr || gradeStr.trim() === '') return 'text-slate-400';
-    const grade = parseFloat(gradeStr);
-    const ratio = grade / maxPoints;
-    if (ratio >= 0.8) return 'text-emerald-600';
-    if (ratio >= 0.6) return 'text-slate-900';
-    if (ratio >= 0.5) return 'text-amber-600';
-    return 'text-rose-600';
-  };
+  // Handlers
+  const handleExamenGradeChange = (subjectId: number, val: string) => {
+    if (!selectedStudent) return;
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
+    const num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > 20)) return;
 
-  const handleGradeChange = (assId: number, studentId: number, value: string) => {
-    setGradesMap(prev => ({
+    setExamenGradesMap(prev => ({
       ...prev,
-      [assId]: {
-        ...(prev[assId] || {}),
-        [studentId]: value
+      [selectedStudent.matricule]: {
+        ...(prev[selectedStudent.matricule] || {}),
+        [subjectId]: val
       }
     }));
   };
 
-  const calculateAverage = (studentId: number) => {
-    let totalScore = 0;
-    let count = 0;
-    assessments.forEach(ass => {
-      const g = gradesMap[ass.id]?.[studentId];
-      if (g && g.trim() !== '') {
-        // Normalize to 20 for average calculation simplicity
-        const val = parseFloat(g);
-        const max = ass.total_points || 20;
-        totalScore += (val / max) * 20;
-        count++;
-      }
-    });
-    return count === 0 ? null : (totalScore / count);
+  const handleAssessmentGradeChange = (matricule: number, val: string, maxPoints: number) => {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return;
+    const num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > maxPoints)) return;
+
+    setAssessmentGradesMap(prev => ({
+      ...prev,
+      [matricule]: val
+    }));
   };
 
-  const hasChanges = JSON.stringify(gradesMap) !== JSON.stringify(originalGradesMap);
+  const saveExamenGrades = async () => {
+    if (!selectedStudent || !uid) return;
+    const studentGrades = examenGradesMap[selectedStudent.matricule] || {};
+    const payload = Object.entries(studentGrades)
+      .filter(([_, note]) => note !== '')
+      .map(([idCours, note]) => ({
+        idCours: parseInt(idCours),
+        note: parseFloat(note as string)
+      }));
 
-  const handleSave = async () => {
-    if (!hasChanges) return;
-    setSaving(true);
-    const token = localStorage.getItem('sanctum_token');
-    
+    if (payload.length === 0) return;
+
     try {
-      // Find assessments that have changes
-      const promises = [];
-      for (const ass of assessments) {
-        const payloadGrades = [];
-        for (const stu of students) {
-          const original = originalGradesMap[ass.id]?.[stu.id];
-          const current = gradesMap[ass.id]?.[stu.id];
-          if (current !== original && current && current.trim() !== '') {
-            payloadGrades.push({ student_id: stu.id, score: parseFloat(current) });
-          }
-        }
-        
-        if (payloadGrades.length > 0) {
-          promises.push(
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/grades`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                assessment_id: ass.id,
-                grades: payloadGrades
-              })
-            })
-          );
-        }
-      }
-
-      await Promise.all(promises);
-      alert('Notes enregistrées avec succès !');
-      setOriginalGradesMap(JSON.parse(JSON.stringify(gradesMap)));
-    } catch (e) {
-      console.error(e);
-      alert("Erreur lors de l'enregistrement des notes.");
+      setSaving(true);
+      const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/student/${selectedStudent.matricule}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, grades: payload })
+      });
+      if (!res.ok) throw new Error('Erreur de sauvegarde');
+      setSuccessMsg(`Notes enregistrées pour ${selectedStudent.nom}`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Erreur lors de la sauvegarde.');
+      setTimeout(() => setErrorMsg(''), 3000);
     } finally {
       setSaving(false);
     }
   };
 
-  let gradesCount = 0;
-  let totalGradesExpected = students.length * assessments.length;
-  students.forEach(s => {
-    assessments.forEach(a => {
-      if (gradesMap[a.id]?.[s.id]?.trim()) gradesCount++;
-    });
-  });
+  const saveAssessmentGrades = async () => {
+    if (!uid || !selectedAssessmentId) return;
+    
+    const payload = Object.entries(assessmentGradesMap)
+      .filter(([_, note]) => note !== '')
+      .map(([student_id, note]) => ({
+        student_id: parseInt(student_id),
+        score: parseFloat(note as string)
+      }));
+
+    if (payload.length === 0) return;
+
+    try {
+      setSaving(true);
+      const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, grades: payload })
+      });
+      if (!res.ok) throw new Error('Erreur de sauvegarde');
+      setSuccessMsg(`Toutes les notes ont été enregistrées avec succès.`);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg('Erreur lors de la sauvegarde.');
+      setTimeout(() => setErrorMsg(''), 3000);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Render Logic
+  const filteredAssessments = assessments.filter(a => a.type === evalType);
+  const selectedAssObj = assessments.find(a => String(a.id) === selectedAssessmentId);
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-10 bg-slate-50/50">
       <TeacherHeader 
         title="Saisie des notes" 
-        subtitle="Gérer les évaluations de vos classes"
+        subtitle="Remplissez les notes pour vos élèves"
       />
-      
-      <div className="p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-4 pr-10 text-sm font-medium text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                disabled={fetching}
+
+      <div className="p-6 max-w-6xl mx-auto">
+        
+        {/* Top Controls */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-6">
+          <div className="flex-1">
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Type d'évaluation</label>
+            <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200 w-max">
+              {['Examen', 'Contrôle', 'Devoir'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    setEvalType(t);
+                    setSelectedAssessmentId('');
+                  }}
+                  className={cn(
+                    "px-6 py-2 rounded-lg text-sm font-bold transition-all",
+                    evalType === t 
+                      ? "bg-white text-blue-700 shadow-sm ring-1 ring-blue-200" 
+                      : "text-slate-500 hover:text-slate-700"
+                  )}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {evalType !== 'Examen' && (
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Sélectionnez l'épreuve</label>
+              <select 
+                value={selectedAssessmentId}
+                onChange={e => setSelectedAssessmentId(e.target.value)}
+                className="w-full max-w-sm h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-medium"
               >
-                {classes.length === 0 && <option value="">Aucune classe</option>}
-                {classes.map((cls) => (
-                  <option key={cls.school_class_id || cls.id} value={cls.school_class_id || cls.id}>
-                    {cls.school_class?.name || cls.name || `Classe #${cls.school_class_id || cls.id}`}
-                  </option>
+                <option value="">-- Choisir un {evalType.toLowerCase()} --</option>
+                {filteredAssessments.map(a => (
+                  <option key={a.id} value={a.id}>{a.title}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="search"
-                placeholder="Rechercher un élève..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 border-slate-200 bg-slate-50 pl-9 text-sm focus:bg-white"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              Exporter
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleSave}
-              className={cn(
-                'gap-2 transition-all',
-                hasChanges && !saving
-                  ? 'bg-emerald-600 hover:bg-emerald-700' 
-                  : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-              )}
-              disabled={!hasChanges || saving}
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Enregistrer
-            </Button>
-          </div>
+          )}
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="overflow-x-auto">
-            {fetching ? (
-              <div className="p-8 flex justify-center text-slate-500"><Loader2 className="w-6 h-6 animate-spin mr-2"/> Chargement...</div>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/50">
-                    <th className="sticky left-0 z-10 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-900">
-                      Élève
-                    </th>
-                    {assessments.length === 0 && (
-                      <th className="px-4 py-3 text-center text-sm text-slate-400 font-normal">
-                        Aucune évaluation trouvée.
-                      </th>
-                    )}
-                    {assessments.map((ass) => (
-                      <th key={ass.id} className="px-4 py-3 text-center">
-                        <div className="text-sm font-semibold text-slate-900 truncate max-w-[150px] mx-auto" title={ass.title}>{ass.title}</div>
-                        <div className="text-xs text-slate-500">{ass.date?.split('-').reverse().join('/') || ''} • /{ass.total_points || 20}</div>
-                      </th>
-                    ))}
-                    <th className="px-4 py-3 text-center">
-                      <div className="text-sm font-semibold text-emerald-700">Moy. (/20)</div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStudents.length === 0 && (
-                    <tr>
-                      <td colSpan={assessments.length + 2} className="p-4 text-center text-sm text-slate-500">
-                        Aucun élève trouvé.
-                      </td>
-                    </tr>
-                  )}
-                  {filteredStudents.map((student) => {
-                    const avg = calculateAverage(student.id);
-                    return (
-                      <tr key={student.id} className="group transition-colors hover:bg-slate-50/50">
-                        <td className="sticky left-0 z-10 bg-white px-4 py-3 group-hover:bg-slate-50/50">
-                          <span className="font-medium text-slate-900">{student.name}</span>
-                        </td>
-                        {assessments.map((ass) => (
-                          <td key={ass.id} className="px-4 py-3 text-center">
-                            <input
-                              type="text"
-                              value={gradesMap[ass.id]?.[student.id] || ''}
-                              placeholder="-"
-                              onChange={(e) => handleGradeChange(ass.id, student.id, e.target.value)}
-                              className={cn(
-                                'w-16 rounded-lg border border-transparent bg-transparent py-1.5 text-center text-sm font-medium transition-all focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20',
-                                getGradeColor(gradesMap[ass.id]?.[student.id], ass.total_points || 20)
-                              )}
-                            />
-                          </td>
-                        ))}
-                        <td className="px-4 py-3 text-center">
-                          <span className={cn(
-                            'inline-flex items-center justify-center rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-semibold',
-                            avg !== null ? getGradeColor(String(avg), 20) : 'text-slate-400'
+        {errorMsg && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm flex items-center font-medium">
+            {errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm flex items-center font-medium">
+            <Check className="w-4 h-4 mr-2" /> {successMsg}
+          </div>
+        )}
+
+        {fetching ? (
+          <div className="py-20 flex justify-center text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        ) : (
+          <>
+            {/* EXAMEN VIEW */}
+            {evalType === 'Examen' && (
+              <div className="flex flex-col md:flex-row gap-6 animate-in fade-in">
+                {/* Student List */}
+                <div className="w-full md:w-1/3 flex flex-col gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <UserCircle className="w-5 h-5 text-blue-600" />
+                      Liste des élèves
+                    </h2>
+                    <div className="flex flex-col gap-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                      {students.map(student => (
+                        <button
+                          key={student.matricule}
+                          onClick={() => setSelectedStudent(student)}
+                          className={cn(
+                            "flex items-center text-left p-3 rounded-xl border transition-all",
+                            selectedStudent?.matricule === student.matricule 
+                              ? "bg-blue-50 border-blue-200 shadow-sm" 
+                              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold mr-3",
+                            selectedStudent?.matricule === student.matricule
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-100 text-slate-600"
                           )}>
-                            {avg !== null ? avg.toFixed(1) : '-'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
+                            {student.nom.charAt(0)}{student.prenom?.charAt(0)}
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className={cn(
+                              "font-semibold text-sm truncate",
+                              selectedStudent?.matricule === student.matricule ? "text-blue-900" : "text-slate-700"
+                            )}>
+                              {student.nom} {student.prenom}
+                            </p>
+                            <p className="text-xs text-slate-400">Matricule: {student.matricule}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-        {!fetching && (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                <Check className="h-5 w-5 text-emerald-600" />
+                {/* Grades Input */}
+                <div className="w-full md:w-2/3">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    {!selectedStudent ? (
+                      <div className="py-20 flex flex-col items-center text-slate-400">
+                        <UserCircle className="w-12 h-12 mb-4 opacity-50" />
+                        <p>Sélectionnez un élève pour saisir ses notes</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-100">
+                          <div>
+                            <h2 className="text-2xl font-bold text-slate-900">
+                              {selectedStudent.nom} {selectedStudent.prenom}
+                            </h2>
+                            <p className="text-slate-500 text-sm mt-1">Saisie des notes d'examen par matière (sur 20)</p>
+                          </div>
+                          <Button onClick={saveExamenGrades} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
+                            {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sauvegarde...</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {subjects.map(subject => {
+                            const val = examenGradesMap[selectedStudent.matricule]?.[subject.id] || '';
+                            const isFilled = val !== '';
+                            return (
+                              <div key={subject.id} className={cn("p-4 rounded-xl border transition-colors", isFilled ? "bg-emerald-50/30 border-emerald-100" : "bg-slate-50 border-slate-100")}>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2 truncate" title={subject.libelle}>{subject.libelle}</label>
+                                <div className="relative">
+                                  <Input type="text" placeholder=" / 20" value={val} onChange={(e) => handleExamenGradeChange(subject.id, e.target.value)} className={cn("text-lg font-bold pr-10", isFilled ? "border-emerald-200 focus-visible:ring-emerald-500 text-emerald-800" : "")} />
+                                  {isFilled && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"><Check className="w-4 h-4" /></div>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-slate-500">Notes saisies</p>
-                <p className="text-lg font-semibold text-slate-900">{gradesCount}/{totalGradesExpected || 0}</p>
+            )}
+
+            {/* DEVOIR / CONTRÔLE VIEW */}
+            {evalType !== 'Examen' && (
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
+                {!selectedAssessmentId ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+                    <FileText className="w-12 h-12 mb-4 opacity-50" />
+                    <p className="text-center max-w-sm">
+                      Veuillez sélectionner une épreuve dans la liste déroulante ci-dessus pour saisir les notes de la classe entière.
+                    </p>
+                  </div>
+                ) : fetchingGrades ? (
+                  <div className="py-20 flex justify-center text-slate-400">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50/50 gap-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">{selectedAssObj?.title}</h2>
+                        <div className="flex items-center gap-3 mt-2 text-sm font-medium text-slate-500">
+                          <span className="bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">{evalType}</span>
+                          <span className="bg-white border border-slate-200 px-2 py-1 rounded shadow-sm">
+                            Matière : {subjects.find(s => String(s.id) === String(selectedAssObj?.subject_id))?.libelle || 'Inconnue'}
+                          </span>
+                        </div>
+                      </div>
+                      <Button onClick={saveAssessmentGrades} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white min-w-[140px] shadow-sm">
+                        {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sauvegarde...</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer les notes</>}
+                      </Button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-white border-b border-slate-100">
+                          <tr>
+                            <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider w-16 text-center">N°</th>
+                            <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Élève</th>
+                            <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider w-48 text-center">Note / {selectedAssObj?.total_points || 20}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {students.map((student, idx) => {
+                            const val = assessmentGradesMap[student.matricule] || '';
+                            const isFilled = val !== '';
+                            const totalPts = selectedAssObj?.total_points || 20;
+                            
+                            return (
+                              <tr key={student.matricule} className="hover:bg-slate-50/50 transition-colors">
+                                <td className="px-6 py-4 text-center font-medium text-slate-400">{idx + 1}</td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200">
+                                      {student.nom.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-slate-900">{student.nom} {student.prenom}</p>
+                                      <p className="text-xs text-slate-500">{student.matricule}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="relative flex justify-center">
+                                    <Input
+                                      type="text"
+                                      placeholder={`/ ${totalPts}`}
+                                      value={val}
+                                      onChange={(e) => handleAssessmentGradeChange(student.matricule, e.target.value, totalPts)}
+                                      className={cn(
+                                        "w-24 text-center text-lg font-bold transition-all shadow-sm",
+                                        isFilled ? "border-emerald-300 bg-emerald-50/30 focus-visible:ring-emerald-500 text-emerald-800" : "bg-white border-slate-200"
+                                      )}
+                                    />
+                                    {isFilled && (
+                                      <div className="absolute right-6 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none">
+                                        <Check className="w-4 h-4" />
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-            {/* Autres statistiques simplifiées */}
-          </div>
+            )}
+          </>
         )}
       </div>
     </main>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -14,13 +15,7 @@ interface Student {
   status: 'present' | 'absent' | 'late';
 }
 
-const students: Student[] = [
-  { id: '1', name: 'Lucas Martin', class: 'CM2 A', lastGrade: 16, trend: 'up', status: 'present' },
-  { id: '2', name: 'Emma Bernard', class: 'CM2 A', lastGrade: 14, trend: 'stable', status: 'present' },
-  { id: '3', name: 'Hugo Petit', class: 'CM1 B', lastGrade: 12, trend: 'down', status: 'late' },
-  { id: '4', name: 'Léa Dubois', class: 'CM2 C', lastGrade: 18, trend: 'up', status: 'present' },
-  { id: '5', name: 'Nathan Robert', class: 'CE2 A', lastGrade: 11, trend: 'down', status: 'absent' },
-];
+const students: Student[] = [];
 
 const getTrendIcon = (trend: Student['trend']) => {
   switch (trend) {
@@ -51,7 +46,42 @@ const getStatusBadge = (status: Student['status']) => {
   );
 };
 
-export function RecentStudents() {
+export function RecentStudents({ uid }: { uid?: string | null }) {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchStudents = async () => {
+      try {
+        const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        if (!res.ok) throw new Error('Erreur de chargement');
+        const data = await res.json();
+
+        // Limit to 5 for recent
+        const formattedStudents: Student[] = (data.students || []).slice(0, 5).map((s: any) => ({
+          id: String(s.matricule),
+          name: `${s.nom} ${s.prenom || ''}`.trim(),
+          class: data.classe || 'Classe',
+          lastGrade: 0,
+          trend: 'stable',
+          status: 'present'
+        }));
+        setStudents(formattedStudents);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [uid]);
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white">
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
@@ -65,35 +95,45 @@ export function RecentStudents() {
       </div>
       
       <div className="divide-y divide-slate-100">
-        {students.map((student) => (
-          <div
-            key={student.id}
-            className="group flex items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50"
-          >
-            <Avatar className="h-10 w-10 border border-slate-200">
-              <AvatarImage src={student.avatar} alt={student.name} />
-              <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
-                {student.name.split(' ').map(n => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-900 truncate">{student.name}</p>
-              <p className="text-sm text-slate-500">{student.class}</p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1">
-                <span className="text-sm font-semibold text-slate-900">{student.lastGrade}/20</span>
-                {getTrendIcon(student.trend)}
+        {loading ? (
+          <div className="px-5 py-10 flex justify-center text-slate-400">
+            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-500"></span>
+          </div>
+        ) : students.length === 0 ? (
+          <div className="px-5 py-10 text-center text-slate-500 italic">
+            Aucune donnée d'élève récente disponible.
+          </div>
+        ) : (
+          students.map((student) => (
+            <div
+              key={student.id}
+              className="group flex items-center gap-4 px-5 py-3 transition-colors hover:bg-slate-50"
+            >
+              <Avatar className="h-10 w-10 border border-slate-200">
+                <AvatarImage src={student.avatar} alt={student.name} />
+                <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
+                  {student.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-900 truncate">{student.name}</p>
+                <p className="text-sm text-slate-500">{student.class}</p>
               </div>
               
-              {getStatusBadge(student.status)}
-              
-              <ChevronRight className="h-4 w-4 text-slate-300 transition-colors group-hover:text-slate-500" />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1">
+                  <span className="text-sm font-semibold text-slate-900">{student.lastGrade}/20</span>
+                  {getTrendIcon(student.trend)}
+                </div>
+                
+                {getStatusBadge(student.status)}
+                
+                <ChevronRight className="h-4 w-4 text-slate-300 transition-colors group-hover:text-slate-500" />
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

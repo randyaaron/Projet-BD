@@ -75,6 +75,11 @@ Route::prefix('legacy')->group(function () {
         Route::post('/enseignants', [LegacyTeacherController::class, 'store']);
         Route::post('/classes', [LegacyStructureController::class, 'createClass']);
         Route::post('/salles', [LegacyStructureController::class, 'createRoom']);
+        Route::patch('/salles/{id}/toggle', function ($id) {
+            $current = DB::table('Salle')->where('idSalle', $id)->value('actif');
+            DB::table('Salle')->where('idSalle', $id)->update(['actif' => $current ? 0 : 1]);
+            return response()->json(['message' => 'Statut mis à jour']);
+        });
         Route::post('/trimestres', [LegacyStructureController::class, 'createTerm']);
         Route::post('/annees', [LegacyStructureController::class, 'createSchoolYear']);
         Route::post('/cours', [LegacyCoursController::class, 'store']);
@@ -230,23 +235,43 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
     $personne = DB::table('Personne')->where('idPers', $id)->first();
     $teacherName = $personne ? $personne->prenom . ' ' . $personne->nom : 'Enseignant';
 
-    $edt = [];
     $totalEleves = 0;
-    
+    $totalAbsences = 0;
+    $totalDevoirs = 0;
+    $upcomingAssessments = [];
+
     if ($idClasse) {
-        $edt = DB::table('EmploiDuTemps')
-            ->join('Cours', 'EmploiDuTemps.idCours', '=', 'Cours.idCours')
-            ->where('EmploiDuTemps.idClasse', $idClasse)
-            ->select('EmploiDuTemps.jour', 'EmploiDuTemps.heure', 'Cours.libelle as subject', 'Cours.idCours')
-            ->orderBy('EmploiDuTemps.jour')->orderBy('EmploiDuTemps.heure')
-            ->get();
-            
         $totalEleves = DB::table('Frequente')
             ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
             ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
             ->where('Salle.idClasse', $idClasse)
             ->where('Eleve.isDelete', 0)
             ->count();
+
+        // Use today's date (server timezone)
+        $today = \Carbon\Carbon::now()->toDateString();
+
+        $totalAbsences = DB::table('attendances')
+            ->where('school_class_id', $idClasse)
+            ->where('status', 'ABSENT')
+            ->whereDate('date', $today)
+            ->count();
+
+        // assessments table may not exist yet — handle gracefully
+        try {
+            $totalDevoirs = DB::table('assessments')
+                ->where('school_class_id', $idClasse)
+                ->count();
+
+            $upcomingAssessments = DB::table('assessments')
+                ->where('school_class_id', $idClasse)
+                ->orderBy('date', 'desc')
+                ->limit(5)
+                ->get();
+        } catch (\Exception $e) {
+            $totalDevoirs = 0;
+            $upcomingAssessments = [];
+        }
     }
 
     return response()->json([
@@ -255,11 +280,10 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
         'salle' => $titulaire ? $titulaire->salle : '',
         'stats' => [
             'eleves' => $totalEleves,
-            'notes' => 0,
-            'absences' => 0,
-            'devoirs' => 0
+            'absences' => $totalAbsences,
+            'devoirs' => $totalDevoirs
         ],
-        'schedule' => $edt
+        'upcomingAssessments' => $upcomingAssessments
     ]);
 });
 
@@ -542,3 +566,120 @@ Route::post('/legacy/teacher/assessments/{id}/grades', function (Illuminate\Http
     return response()->json(['success' => true]);
 });
 
+
+// =============================================================
+// ADMIN — Moyennes réelles (depuis table Evaluation)
+// =============================================================
+Route::get('/legacy/admin/moyennes', function () {
+    $eleves = DB::table('Eleve')
+        ->where('isDelete', 0)
+        ->select('matricule', 'nom', 'prenom', 'sexe')
+        ->orderBy('nom')
+        ->get();
+
+    $result = [];
+    foreach ($eleves as $eleve) {
+        $evaluations = DB::table('Evaluation')
+            ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+            ->where('Evaluation.matricule', $eleve->matricule)
+            ->select('Evaluation.note', 'Cours.libelle as matiere')
+            ->get();
+
+        $notes = [];
+        $total = 0;
+        $count = 0;
+        foreach ($evaluations as $eval) {
+            $notes[] = ['matiere' => $eval->matiere, 'note' => $eval->note];
+            if ($eval->note !== null) { $total += $eval->note; $count++; }
+        }
+        $moyenne = $count > 0 ? round($total / $count, 2) : null;
+
+        $absences = DB::table('attendances')
+            ->where('student_id', $eleve->matricule)
+            ->where('status', 'ABSENT')
+            ->count();
+
+        $result[] = [
+            'matricule'        => $eleve->matricule,
+            'nom'              => $eleve->nom,
+            'prenom'           => $eleve->prenom,
+            'sexe'             => $eleve->sexe,
+            'notes'            => $notes,
+            'moyenne_generale' => $moyenne,
+            'absences'         => $absences,
+            'statut'           => ($moyenne !== null && $moyenne < 10) ? 'Alerte' : 'Bon',
+        ];
+    }
+
+    $allNotes = DB::table('Evaluation')->whereNotNull('note')->avg('note');
+    $enDifficulte = count(array_filter($result, fn($e) => $e['statut'] === 'Alerte'));
+    $avecMoyenne  = array_filter($result, fn($e) => $e['moyenne_generale'] !== null && $e['moyenne_generale'] >= 10);
+    $tauxReussite = count($result) > 0 ? round(count($avecMoyenne) / count($result) * 100, 1) : null;
+
+    return response()->json([
+        'eleves'        => $result,
+        'moyenne_ecole' => $allNotes ? round($allNotes, 2) : null,
+        'total_eleves'  => count($result),
+        'en_difficulte' => $enDifficulte,
+        'taux_reussite' => $tauxReussite,
+    ]);
+});
+
+// =============================================================
+// ADMIN — Bulletin complet d'un élève (notes + absences)
+// =============================================================
+Route::get('/legacy/admin/bulletin/{matricule}', function ($matricule) {
+    $eleve = DB::table('Eleve')->where('matricule', $matricule)->where('isDelete', 0)->first();
+    if (!$eleve) return response()->json(['error' => 'Élève introuvable'], 404);
+
+    $salle = DB::table('Frequente')
+        ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+        ->join('Classe', 'Salle.idClasse', '=', 'Classe.idClasse')
+        ->where('Frequente.matricule', $matricule)
+        ->select('Classe.libelle as classe', 'Salle.libelle as salle')
+        ->first();
+
+    $evaluations = DB::table('Evaluation')
+        ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+        ->where('Evaluation.matricule', $matricule)
+        ->select('Cours.libelle as matiere', 'Evaluation.note')
+        ->orderBy('Cours.libelle')
+        ->get();
+
+    $matieres = [];
+    foreach ($evaluations as $eval) {
+        $key = $eval->matiere;
+        if (!isset($matieres[$key])) $matieres[$key] = ['matiere' => $key, 'notes' => [], 'moyenne' => null];
+        if ($eval->note !== null) $matieres[$key]['notes'][] = $eval->note;
+    }
+    foreach ($matieres as &$m) {
+        if (count($m['notes']) > 0) $m['moyenne'] = round(array_sum($m['notes']) / count($m['notes']), 2);
+    }
+
+    $absences = DB::table('attendances')
+        ->where('student_id', $matricule)
+        ->where('status', 'ABSENT')
+        ->orderBy('date', 'desc')
+        ->select('date', 'status')
+        ->get();
+
+    $moyennes = array_filter(array_column(array_values($matieres), 'moyenne'), fn($v) => $v !== null);
+    $moyenneGenerale = count($moyennes) > 0 ? round(array_sum($moyennes) / count($moyennes), 2) : null;
+
+    $mention = $moyenneGenerale === null ? '—'
+        : ($moyenneGenerale >= 16 ? 'Très Bien'
+        : ($moyenneGenerale >= 14 ? 'Bien'
+        : ($moyenneGenerale >= 12 ? 'Assez Bien'
+        : ($moyenneGenerale >= 10 ? 'Passable' : 'Insuffisant'))));
+
+    return response()->json([
+        'eleve'            => $eleve,
+        'classe'           => $salle?->classe ?? '—',
+        'salle'            => $salle?->salle ?? '—',
+        'matieres'         => array_values($matieres),
+        'absences'         => $absences,
+        'total_absences'   => $absences->count(),
+        'moyenne_generale' => $moyenneGenerale,
+        'mention'          => $mention,
+    ]);
+});

@@ -25,8 +25,7 @@ const navigation = [
   { name: 'Tableau de bord', href: '/teacher', icon: LayoutDashboard },
   { name: 'Emploi du temps', href: '/teacher/schedule', icon: Calendar },
   { name: 'Saisie des notes', href: '/teacher/grades', icon: ClipboardList },
-  { name: 'Gestion absences', href: '/teacher/absences', icon: UserX },
-  { name: 'Gestion retards', href: '/teacher/delays', icon: Clock },
+  { name: 'Appel et Présences', href: '/teacher/absences', icon: UserX },
   { name: 'Devoirs', href: '/teacher/homework', icon: BookOpen },
   { name: 'Messagerie', href: '/teacher/messages', icon: MessageSquare },
   { name: 'Profils élèves', href: '/teacher/students', icon: Users },
@@ -164,12 +163,12 @@ export function TeacherSidebar() {
           )}>
             <Avatar className="h-9 w-9 border-2 border-emerald-600">
               <AvatarImage src="/placeholder-user.jpg" alt="User" />
-              <AvatarFallback className="bg-emerald-600 text-white text-xs">MB</AvatarFallback>
+              <AvatarFallback className="bg-emerald-600 text-white text-xs">EC</AvatarFallback>
             </Avatar>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="truncate text-sm font-medium text-white">Marie Boucher</p>
-                <p className="truncate text-xs text-emerald-300">Mathématiques</p>
+                <p className="truncate text-sm font-medium text-white">Mon Compte</p>
+                <p className="truncate text-xs text-emerald-300">Enseignant</p>
               </div>
             )}
             {!collapsed && (

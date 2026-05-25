@@ -41,7 +41,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           localStorage.setItem('sanctum_token', String(payload.token));
         }
         if (payload?.user?.id) {
-          localStorage.setItem('user_id', String(payload.user.id));
+          localStorage.setItem('user_id', String(payload.user.legacy_id || payload.user.id));
         }
         if (payload?.user?.role) {
           localStorage.setItem('user_role', String(payload.user.role));
@@ -58,8 +58,33 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         }
       }
 
-      // 2. Tentative API Legacy (Admin)
-      const legacyRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/legacy/auth/login-admin`, {
+      // 2. Tentative API Legacy (Enseignant)
+      const legacyTeacherRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/auth/login-teacher`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (legacyTeacherRes.ok) {
+        const payload = await legacyTeacherRes.json();
+        if (payload?.teacher?.id) {
+          localStorage.setItem('user_id', String(payload.teacher.id));
+        }
+        if (payload?.token) {
+          localStorage.setItem('legacy_token', String(payload.token));
+        }
+        localStorage.setItem('user_role', 'ENSEIGNANT');
+        
+        onLogin('teacher');
+        setLoading(false);
+        return;
+      }
+
+      // 3. Tentative API Legacy (Admin)
+      const legacyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/auth/login-admin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

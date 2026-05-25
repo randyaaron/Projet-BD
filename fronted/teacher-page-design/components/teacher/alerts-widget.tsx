@@ -12,40 +12,7 @@ interface Alert {
   isNew: boolean;
 }
 
-const alerts: Alert[] = [
-  {
-    id: '1',
-    type: 'absence',
-    title: 'Absence non justifiée',
-    description: 'Nathan Robert - CE2 A',
-    time: 'Il y a 15 min',
-    isNew: true,
-  },
-  {
-    id: '2',
-    type: 'message',
-    title: 'Nouveau message',
-    description: 'Parent de Lucas Martin',
-    time: 'Il y a 1h',
-    isNew: true,
-  },
-  {
-    id: '3',
-    type: 'delay',
-    title: 'Retard signalé',
-    description: 'Hugo Petit - CM1 B (+15 min)',
-    time: 'Il y a 2h',
-    isNew: false,
-  },
-  {
-    id: '4',
-    type: 'warning',
-    title: 'Note en attente',
-    description: 'Contrôle CM2 A du 08/01',
-    time: 'Hier',
-    isNew: false,
-  },
-];
+const alerts: Alert[] = [];
 
 const getAlertIcon = (type: Alert['type']) => {
   const iconMap = {
@@ -73,49 +40,59 @@ export function AlertsWidget() {
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-2">
           <h3 className="font-semibold text-slate-900">Alertes</h3>
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-xs font-medium text-white">
-            2
-          </span>
+          {alerts.length > 0 && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-xs font-medium text-white">
+              {alerts.length}
+            </span>
+          )}
         </div>
-        <button className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-700">
-          Tout marquer lu
-        </button>
+        {alerts.length > 0 && (
+          <button className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-700">
+            Tout marquer lu
+          </button>
+        )}
       </div>
       
       <div className="divide-y divide-slate-100">
-        {alerts.map((alert) => {
-          const Icon = getAlertIcon(alert.type);
-          const styles = getAlertStyles(alert.type);
-          
-          return (
-            <div
-              key={alert.id}
-              className={cn(
-                'group flex items-start gap-3 px-5 py-3 transition-colors',
-                alert.isNew && 'bg-slate-50/50'
-              )}
-            >
-              <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', styles.bg)}>
-                <Icon className={cn('h-4 w-4', styles.icon)} />
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-slate-900">{alert.title}</p>
-                  {alert.isNew && (
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  )}
+        {alerts.length === 0 ? (
+          <div className="px-5 py-10 text-center text-slate-500 italic">
+            Aucune nouvelle alerte.
+          </div>
+        ) : (
+          alerts.map((alert) => {
+            const Icon = getAlertIcon(alert.type);
+            const styles = getAlertStyles(alert.type);
+            
+            return (
+              <div
+                key={alert.id}
+                className={cn(
+                  'group flex items-start gap-3 px-5 py-3 transition-colors',
+                  alert.isNew && 'bg-slate-50/50'
+                )}
+              >
+                <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', styles.bg)}>
+                  <Icon className={cn('h-4 w-4', styles.icon)} />
                 </div>
-                <p className="text-sm text-slate-500">{alert.description}</p>
-                <p className="mt-1 text-xs text-slate-400">{alert.time}</p>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-slate-900">{alert.title}</p>
+                    {alert.isNew && (
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-500">{alert.description}</p>
+                  <p className="mt-1 text-xs text-slate-400">{alert.time}</p>
+                </div>
+                
+                <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              
-              <button className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -45,6 +45,7 @@ class LegacyStudentController extends Controller
             'lieuNaissance'  => ['required', 'string', 'max:30'],
             'sexe'           => ['required', 'integer'],
             'idVilleNaissance' => ['nullable', 'integer'],
+            'parentNom'      => ['nullable', 'string', 'max:255'],
         ]);
 
         // Vérifier que le matricule n'existe pas déjà
@@ -67,6 +68,23 @@ class LegacyStudentController extends Controller
             'created_at'       => now(),
             'isDelete'         => 0,
         ]);
+
+        if (!empty($data['parentNom'])) {
+            $idPers = DB::table('Personne')->insertGetId([
+                'nom' => strtoupper($data['parentNom']),
+                'prenom' => '',
+                'dateNaissance' => '1970-01-01',
+                'typePersonne' => 3,
+                'username' => 'P' . $data['matricule'],
+                'password' => bcrypt('123456'),
+                'idAdmin' => 1,
+            ]);
+            DB::table('Parents')->insert([
+                'idPers' => $idPers,
+                'matricule' => $data['matricule'],
+                'idAdmin' => 1,
+            ]);
+        }
 
         $row = DB::table('Eleve')->where('matricule', $data['matricule'])->first();
 

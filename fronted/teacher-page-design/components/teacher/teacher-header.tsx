@@ -22,15 +22,7 @@ export function TeacherHeader({ title, subtitle }: TeacherHeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            type="search"
-            placeholder="Rechercher un élève, une classe..."
-            className="w-64 border-slate-200 bg-slate-50 pl-9 text-sm focus:bg-white"
-          />
-        </div>
+
 
         {/* Date */}
         <div className="hidden items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 lg:flex">

@@ -28,7 +28,8 @@ export default function App() {
     setIsLoggedIn(true);
 
     if (role === 'teacher') {
-      window.location.href = 'http://localhost:3001';
+      const uid = localStorage.getItem('user_id') || '';
+      window.location.href = `http://localhost:3001/teacher?userId=${uid}`;
     } else if (role === 'parent') {
       window.location.href = 'http://localhost:3002';
     }

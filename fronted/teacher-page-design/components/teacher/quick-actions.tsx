@@ -27,25 +27,11 @@ const actions = [
     color: 'bg-rose-500',
   },
   {
-    title: 'Signaler retard',
-    description: 'Enregistrer un retard',
-    href: '/teacher/delays',
-    icon: Clock,
-    color: 'bg-amber-500',
-  },
-  {
     title: 'Nouveau devoir',
     description: 'Créer un devoir',
-    href: '/teacher/homework/new',
+    href: '/teacher/homework',
     icon: BookOpen,
     color: 'bg-blue-500',
-  },
-  {
-    title: 'Envoyer message',
-    description: 'Contacter un parent',
-    href: '/teacher/messages/new',
-    icon: MessageSquare,
-    color: 'bg-violet-500',
   },
 ];
 
@@ -55,12 +41,12 @@ export function QuickActions() {
       <h3 className="font-semibold text-slate-900">Actions rapides</h3>
       <p className="mt-1 text-sm text-slate-500">Accès aux fonctions principales</p>
       
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mt-4 flex flex-wrap justify-center gap-4">
         {actions.map((action) => (
           <Link
             key={action.title}
             href={action.href}
-            className="group flex flex-col items-center rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-center transition-all hover:border-emerald-200 hover:bg-emerald-50/50 hover:shadow-md"
+            className="group flex flex-col items-center rounded-xl border border-slate-100 bg-slate-50/50 p-4 text-center transition-all hover:border-emerald-200 hover:bg-emerald-50/50 hover:shadow-md w-full sm:w-[200px]"
           >
             <div className={cn(
               'flex h-12 w-12 items-center justify-center rounded-xl text-white transition-transform group-hover:scale-110',

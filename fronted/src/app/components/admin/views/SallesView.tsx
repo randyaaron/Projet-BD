@@ -56,6 +56,13 @@ export function SallesView() {
     }
   };
 
+  const handleToggleActif = async (idSalle: number) => {
+    try {
+      await legacyFetch(`${API}/salles/${idSalle}/toggle`, { method: 'PATCH' });
+      setSalles(prev => prev.map(s => s.idSalle === idSalle ? { ...s, actif: s.actif === 1 ? 0 : 1 } : s));
+    } catch (e: any) { alert(e.message || 'Erreur lors du changement de statut'); }
+  };
+
   const filtered = salles.filter(s =>
     s.libelle.toLowerCase().includes(search.toLowerCase()) &&
     (filterStatut === '' || (filterStatut === 'actif' ? s.actif === 1 : s.actif !== 1))
@@ -128,12 +135,15 @@ export function SallesView() {
                 </td>
                 <td className="px-5 py-3 text-slate-500 text-xs">{s.position}</td>
                 <td className="px-5 py-3">
-                  <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => handleToggleActif(s.idSalle)}
+                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded border transition-colors ${s.actif === 1 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'}`}
+                  >
                     {s.actif === 1
-                      ? <><CheckCircle2 className="w-4 h-4 text-emerald-500" /><span className="text-emerald-700 text-xs" style={{ fontWeight: 600 }}>Active</span></>
-                      : <><XCircle className="w-4 h-4 text-red-400" /><span className="text-red-600 text-xs" style={{ fontWeight: 600 }}>Inactive</span></>
+                      ? <><CheckCircle2 className="w-3.5 h-3.5" /><span className="text-xs" style={{ fontWeight: 600 }}>Active</span></>
+                      : <><XCircle className="w-3.5 h-3.5" /><span className="text-xs" style={{ fontWeight: 600 }}>Inactive</span></>
                     }
-                  </div>
+                  </button>
                 </td>
               </tr>
             ))}

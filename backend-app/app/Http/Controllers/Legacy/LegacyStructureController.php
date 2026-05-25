@@ -126,6 +126,11 @@ class LegacyStructureController extends Controller
 
         $nextId = (DB::table('Salle')->max('idSalle') ?? 0) + 1;
 
+        if (isset($data['idClasse']) && $data['idClasse']) {
+            // Delete existing rooms for this class to enforce 1-to-1 relationship
+            DB::table('Salle')->where('idClasse', $data['idClasse'])->delete();
+        }
+
         DB::table('Salle')->insert([
             'idSalle'  => $nextId,
             'libelle'  => $data['libelle'],

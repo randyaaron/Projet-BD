@@ -49,12 +49,12 @@ class LegacyTitulaireController extends Controller
         // 1. Un enseignant ne peut pas être titulaire de plusieurs salles
         DB::table('Titulaire')
             ->where('idPers', $data['idPers'])
-            ->update(['actif' => 0]);
+            ->delete();
 
         // 2. Une salle ne peut avoir qu'un seul titulaire actif
         DB::table('Titulaire')
             ->where('idSalle', $data['idSalle'])
-            ->update(['actif' => 0]);
+            ->delete();
 
         DB::table('Titulaire')->insert([
             'idPers'  => $data['idPers'],

@@ -14,7 +14,7 @@ class SettingsController extends Controller
     {
         if (!Storage::exists($this->settingsFile)) {
             return response()->json([
-                'schoolName' => 'École Primaire Saint-Michel',
+                'schoolName' => 'École Primaire Les Genies',
                 'academicYear' => '2025-2026',
                 'contactEmail' => 'contact@saint-michel.edu',
                 'contactPhone' => '+33 1 23 45 67 89'

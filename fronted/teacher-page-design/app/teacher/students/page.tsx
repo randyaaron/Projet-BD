@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import { 
@@ -13,7 +14,8 @@ import {
   MessageSquare,
   MoreHorizontal,
   Users,
-  GraduationCap
+  GraduationCap,
+  Loader2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -29,21 +31,6 @@ interface Student {
   lastNote: { value: number; subject: string };
   parentEmail: string;
 }
-
-const students: Student[] = [
-  { id: '1', name: 'Martin Lucas', class: 'CM2 A', average: 15.4, trend: 'up', absences: 2, delays: 1, lastNote: { value: 16, subject: 'Contrôle' }, parentEmail: 'martin@email.com' },
-  { id: '2', name: 'Bernard Emma', class: 'CM2 A', average: 14.3, trend: 'stable', absences: 0, delays: 0, lastNote: { value: 14, subject: 'DM' }, parentEmail: 'bernard@email.com' },
-  { id: '3', name: 'Petit Hugo', class: 'CM1 B', average: 11.0, trend: 'down', absences: 5, delays: 3, lastNote: { value: 10, subject: 'Interro' }, parentEmail: 'petit@email.com' },
-  { id: '4', name: 'Dubois Léa', class: 'CM2 A', average: 18.2, trend: 'up', absences: 0, delays: 0, lastNote: { value: 19, subject: 'Contrôle' }, parentEmail: 'dubois@email.com' },
-  { id: '5', name: 'Robert Nathan', class: 'CE2 A', average: 10.0, trend: 'down', absences: 8, delays: 4, lastNote: { value: 8, subject: 'DM' }, parentEmail: 'robert@email.com' },
-  { id: '6', name: 'Richard Julie', class: 'CM2 C', average: 15.1, trend: 'stable', absences: 1, delays: 2, lastNote: { value: 15, subject: 'Interro' }, parentEmail: 'richard@email.com' },
-  { id: '7', name: 'Durand Thomas', class: 'CM1 B', average: 13.1, trend: 'up', absences: 3, delays: 1, lastNote: { value: 14, subject: 'Contrôle' }, parentEmail: 'durand@email.com' },
-  { id: '8', name: 'Moreau Camille', class: 'CM2 C', average: 16.9, trend: 'stable', absences: 1, delays: 0, lastNote: { value: 17, subject: 'DM' }, parentEmail: 'moreau@email.com' },
-  { id: '9', name: 'Simon Antoine', class: 'CE2 A', average: 12.5, trend: 'up', absences: 2, delays: 2, lastNote: { value: 13, subject: 'Interro' }, parentEmail: 'simon@email.com' },
-  { id: '10', name: 'Laurent Marie', class: 'CE1 D', average: 14.8, trend: 'stable', absences: 0, delays: 1, lastNote: { value: 15, subject: 'Contrôle' }, parentEmail: 'laurent@email.com' },
-];
-
-const classes = ['Toutes', 'CM2 A', 'CM2 C', 'CM1 B', 'CE2 A', 'CE1 D'];
 
 const getTrendIcon = (trend: Student['trend']) => {
   switch (trend) {
@@ -64,9 +51,62 @@ const getAverageColor = (average: number) => {
 };
 
 export default function StudentsPage() {
+  const searchParams = useSearchParams();
+  const [uid, setUid] = useState<string | null>(null);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('Toutes');
   const [sortBy, setSortBy] = useState<'name' | 'average' | 'absences'>('name');
+
+  useEffect(() => {
+    let userId = searchParams.get('userId');
+    if (!userId && typeof window !== 'undefined') {
+      userId = localStorage.getItem('user_id');
+    }
+    setUid(userId);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!uid) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+        // Using grades context to get students for this teacher
+        const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        if (!res.ok) throw new Error('Erreur de chargement');
+        const data = await res.json();
+
+        // Check if there's a specific endpoint for student profiles, but for now we format the grades context
+        // to fit the Student interface expected by this view
+        const formattedStudents: Student[] = (data.students || []).map((s: any) => ({
+          id: String(s.matricule),
+          name: `${s.nom} ${s.prenom || ''}`.trim(),
+          class: data.classe || 'Classe',
+          average: 0, // Placeholder
+          trend: 'stable',
+          absences: 0,
+          delays: 0,
+          lastNote: { value: 0, subject: '-' },
+          parentEmail: ''
+        }));
+        setStudents(formattedStudents);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [uid]);
+
+  const classes = ['Toutes'];
 
   const filteredStudents = students
     .filter(student => {
@@ -82,7 +122,7 @@ export default function StudentsPage() {
 
   const classStats = {
     total: filteredStudents.length,
-    avgGrade: filteredStudents.reduce((acc, s) => acc + s.average, 0) / filteredStudents.length || 0,
+    avgGrade: filteredStudents.length > 0 ? filteredStudents.reduce((acc, s) => acc + s.average, 0) / filteredStudents.length : 0,
     totalAbsences: filteredStudents.reduce((acc, s) => acc + s.absences, 0),
   };
 
@@ -179,89 +219,102 @@ export default function StudentsPage() {
         </div>
 
         {/* Students Grid */}
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredStudents.map((student) => (
-            <div
-              key={student.id}
-              className="group rounded-xl border border-slate-200 bg-white p-5 transition-all hover:shadow-lg hover:shadow-slate-200/50"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12 border-2 border-slate-100">
-                    <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                      {student.name.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-slate-900">{student.name}</p>
-                    <p className="text-sm text-slate-500">{student.class}</p>
-                  </div>
-                </div>
-                <button className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100">
-                  <MoreHorizontal className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-4 grid grid-cols-3 gap-3">
-                <div className="rounded-lg bg-slate-50 p-3 text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <span className={cn(
-                      'text-lg font-semibold rounded-md px-2',
-                      getAverageColor(student.average)
-                    )}>
-                      {student.average.toFixed(1)}
-                    </span>
-                    {getTrendIcon(student.trend)}
-                  </div>
-                  <p className="mt-1 text-xs text-slate-500">Moyenne</p>
-                </div>
-                <div className="rounded-lg bg-slate-50 p-3 text-center">
-                  <p className={cn(
-                    'text-lg font-semibold',
-                    student.absences > 3 ? 'text-rose-600' : 'text-slate-900'
-                  )}>
-                    {student.absences}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">Absences</p>
-                </div>
-                <div className="rounded-lg bg-slate-50 p-3 text-center">
-                  <p className={cn(
-                    'text-lg font-semibold',
-                    student.delays > 2 ? 'text-amber-600' : 'text-slate-900'
-                  )}>
-                    {student.delays}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">Retards</p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3">
-                <div>
-                  <p className="text-xs text-slate-500">Dernière note</p>
-                  <p className="font-medium text-slate-900">
-                    <span className={cn(
-                      student.lastNote.value >= 12 ? 'text-emerald-600' : 'text-rose-600'
-                    )}>
-                      {student.lastNote.value}/20
-                    </span>
-                    {' · '}
-                    <span className="text-slate-500">{student.lastNote.subject}</span>
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-2">
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
-                  <Eye className="h-4 w-4" />
-                  Voir profil
-                </button>
-                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
-                  <MessageSquare className="h-4 w-4" />
-                  Contacter
-                </button>
-              </div>
+        <div className="mt-6">
+          {loading ? (
+            <div className="py-20 flex justify-center text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin" />
             </div>
-          ))}
+          ) : filteredStudents.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
+              <Users className="mx-auto h-12 w-12 text-slate-300 mb-4" />
+              <p className="text-slate-500 italic">Aucun élève trouvé.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredStudents.map((student) => (
+                <div
+                  key={student.id}
+                  className="group rounded-xl border border-slate-200 bg-white p-5 transition-all hover:shadow-lg hover:shadow-slate-200/50"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12 border-2 border-slate-100">
+                        <AvatarFallback className="bg-emerald-100 text-emerald-700">
+                          {student.name.split(' ').map(n => n[0]).join('')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold text-slate-900">{student.name}</p>
+                        <p className="text-sm text-slate-500">{student.class}</p>
+                      </div>
+                    </div>
+                    <button className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100">
+                      <MoreHorizontal className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="rounded-lg bg-slate-50 p-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <span className={cn(
+                          'text-lg font-semibold rounded-md px-2',
+                          getAverageColor(student.average)
+                        )}>
+                          {student.average.toFixed(1)}
+                        </span>
+                        {getTrendIcon(student.trend)}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">Moyenne</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3 text-center">
+                      <p className={cn(
+                        'text-lg font-semibold',
+                        student.absences > 3 ? 'text-rose-600' : 'text-slate-900'
+                      )}>
+                        {student.absences}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Absences</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3 text-center">
+                      <p className={cn(
+                        'text-lg font-semibold',
+                        student.delays > 2 ? 'text-amber-600' : 'text-slate-900'
+                      )}>
+                        {student.delays}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">Retards</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                    <div>
+                      <p className="text-xs text-slate-500">Dernière note</p>
+                      <p className="font-medium text-slate-900">
+                        <span className={cn(
+                          student.lastNote.value >= 12 ? 'text-emerald-600' : 'text-rose-600'
+                        )}>
+                          {student.lastNote.value}/20
+                        </span>
+                        {' · '}
+                        <span className="text-slate-500">{student.lastNote.subject}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                      <Eye className="h-4 w-4" />
+                      Voir profil
+                    </button>
+                    <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
+                      <MessageSquare className="h-4 w-4" />
+                      Contacter
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </main>

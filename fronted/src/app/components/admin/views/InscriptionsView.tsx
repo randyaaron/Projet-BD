@@ -28,6 +28,7 @@ export function InscriptionsView() {
     lieuNaissance: '',
     sexe: '1',
     idClasse: '',
+    parentNom: '',
     // Paiement
     idMode: '1',
     montantVerse: String(FRAIS_INSCRIPTION),
@@ -245,6 +246,10 @@ export function InscriptionsView() {
                 <div>
                   <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Lieu de naissance *</label>
                   <input required value={form.lieuNaissance} onChange={e => setForm({ ...form, lieuNaissance: e.target.value })} placeholder="Ex: Yaoundé" className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Parent / Tuteur</label>
+                  <input value={form.parentNom || ''} onChange={e => setForm({ ...form, parentNom: e.target.value })} placeholder="Nom du parent ou tuteur" className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
                 <div>
                   <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Classe (section)</label>

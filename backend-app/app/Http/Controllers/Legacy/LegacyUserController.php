@@ -30,10 +30,8 @@ class LegacyUserController extends Controller
         // Enseignants (Personne typePersonne=2)
         $enseignants = DB::table('Personne')
             ->join('Enseignant', 'Personne.idPers', '=', 'Enseignant.idPers')
-            ->join('Cours', 'Enseignant.idCours', '=', 'Cours.idCours')
             ->where('Personne.typePersonne', 2)
             ->where('Personne.isDelete', 0)
-            ->where('Enseignant.Actif', 1)
             ->select(
                 DB::raw("'enseignant' as source"),
                 'Personne.idPers as id',
@@ -43,9 +41,8 @@ class LegacyUserController extends Controller
                 'Personne.mobile',
                 'Personne.email',
                 DB::raw("'enseignant' as role"),
-                DB::raw("1 as actif"),
-                'Personne.created_at',
-                'Cours.libelle as coursHabilite'
+                'Enseignant.Actif as actif',
+                'Personne.created_at'
             )->get();
 
         // Parents (Personne typePersonne=3)
@@ -187,6 +184,9 @@ class LegacyUserController extends Controller
         if ($source === 'admin') {
             $current = DB::table('Admin')->where('ID', $id)->value('actif');
             DB::table('Admin')->where('ID', $id)->update(['actif' => $current ? 0 : 1]);
+        } elseif ($source === 'enseignant') {
+            $current = DB::table('Enseignant')->where('idPers', $id)->value('Actif');
+            DB::table('Enseignant')->where('idPers', $id)->update(['Actif' => $current ? 0 : 1]);
         } else {
             $current = DB::table('Personne')->where('idPers', $id)->value('isDelete');
             DB::table('Personne')->where('idPers', $id)->update(['isDelete' => $current ? 0 : 1]);

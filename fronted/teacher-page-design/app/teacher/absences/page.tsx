@@ -1,249 +1,255 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import { 
-  Search, 
-  Filter, 
-  Plus,
   Check,
   X,
   Clock,
-  FileText,
-  ChevronDown
+  Loader2,
+  CalendarDays,
+  UserCircle
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useSearchParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-interface Absence {
-  id: string;
-  student: {
-    name: string;
-    class: string;
-  };
-  date: Date;
-  period: string;
-  subject: string;
-  status: 'pending' | 'justified' | 'unjustified';
-  justification?: string;
+interface Student {
+  matricule: number;
+  nom: string;
+  prenom: string;
+  sexe: string;
 }
 
-const absences: Absence[] = [
-  { 
-    id: '1', 
-    student: { name: 'Nathan Robert', class: 'CE2 A' }, 
-    date: new Date(), 
-    period: '08:00 - 10:00',
-    subject: 'Mathématiques',
-    status: 'pending'
-  },
-  { 
-    id: '2', 
-    student: { name: 'Hugo Petit', class: 'CM1 B' }, 
-    date: new Date(), 
-    period: '10:00 - 12:00',
-    subject: 'Sciences',
-    status: 'unjustified'
-  },
-  { 
-    id: '3', 
-    student: { name: 'Emma Bernard', class: 'CM2 A' }, 
-    date: new Date(Date.now() - 86400000), 
-    period: '14:00 - 16:00',
-    subject: 'Géométrie',
-    status: 'justified',
-    justification: 'Rendez-vous médical'
-  },
-  { 
-    id: '4', 
-    student: { name: 'Lucas Martin', class: 'CM2 A' }, 
-    date: new Date(Date.now() - 86400000 * 2), 
-    period: '08:00 - 09:00',
-    subject: 'Mathématiques',
-    status: 'justified',
-    justification: 'Maladie - certificat fourni'
-  },
-  { 
-    id: '5', 
-    student: { name: 'Camille Moreau', class: 'CM2 C' }, 
-    date: new Date(Date.now() - 86400000 * 3), 
-    period: '10:00 - 11:00',
-    subject: 'Géométrie',
-    status: 'unjustified'
-  },
-];
-
-const statusConfig = {
-  pending: { label: 'En attente', bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock },
-  justified: { label: 'Justifiée', bg: 'bg-emerald-50', text: 'text-emerald-700', icon: Check },
-  unjustified: { label: 'Non justifiée', bg: 'bg-rose-50', text: 'text-rose-700', icon: X },
-};
+interface Attendance {
+  id: number;
+  student_id: number;
+  date: string;
+  status: 'PRESENT' | 'ABSENT' | 'LATE';
+}
 
 export default function AbsencesPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [selectedClass, setSelectedClass] = useState<string>('all');
+  const searchParams = useSearchParams();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [attendances, setAttendances] = useState<Attendance[]>([]);
+  
+  const [fetching, setFetching] = useState(true);
+  const [errorMsg, setErrorMsg] = useState('');
+  
+  // Date du jour par défaut
+  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [uid, setUid] = useState<string | null>(null);
 
-  const classes = ['CM2 A', 'CM1 B', 'CM2 C', 'CE2 A', 'CE1 D'];
+  // Status de chargement pour chaque élève
+  const [loadingMap, setLoadingMap] = useState<Record<number, boolean>>({});
 
-  const filteredAbsences = absences.filter(absence => {
-    const matchesSearch = absence.student.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || absence.status === selectedStatus;
-    const matchesClass = selectedClass === 'all' || absence.student.class === selectedClass;
-    return matchesSearch && matchesStatus && matchesClass;
-  });
+  useEffect(() => {
+    let userId = searchParams.get('userId');
+    if (!userId && typeof window !== 'undefined') {
+      userId = localStorage.getItem('user_id');
+    }
+    setUid(userId);
+    
+    if (userId && typeof window !== 'undefined') {
+      localStorage.setItem('user_id', userId);
+    }
+  }, [searchParams]);
 
+  useEffect(() => {
+    if (!uid) return;
+
+    const fetchContext = async () => {
+      try {
+        setFetching(true);
+        const res = await fetch(`http://localhost:8000/api/legacy/teacher/attendance/context/${uid}`);
+        if (!res.ok) throw new Error('Erreur lors du chargement des données.');
+        
+        const data = await res.json();
+        if (data.error) {
+          setErrorMsg(data.error);
+          return;
+        }
+
+        setStudents(data.students || []);
+        setAttendances(data.attendances || []);
+      } catch (err) {
+        console.error(err);
+        setErrorMsg('Impossible de charger la liste des élèves.');
+      } finally {
+        setFetching(false);
+      }
+    };
+
+    fetchContext();
+  }, [uid]);
+
+  const handleStatusChange = async (matricule: number, newStatus: 'PRESENT' | 'ABSENT' | 'LATE') => {
+    if (!uid) return;
+    
+    setLoadingMap(prev => ({ ...prev, [matricule]: true }));
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/legacy/teacher/attendance/student/${matricule}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, date: selectedDate, status: newStatus })
+      });
+
+      if (!res.ok) throw new Error('Erreur de sauvegarde');
+      
+      // Update local state immediately
+      setAttendances(prev => {
+        const filtered = prev.filter(a => !(a.student_id === matricule && a.date === selectedDate));
+        return [...filtered, { id: Date.now(), student_id: matricule, date: selectedDate, status: newStatus }];
+      });
+
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la mise à jour de la présence.');
+    } finally {
+      setLoadingMap(prev => ({ ...prev, [matricule]: false }));
+    }
+  };
+
+  // Calculate stats for the selected date
+  const dayAttendances = attendances.filter(a => a.date === selectedDate);
   const stats = {
-    total: absences.length,
-    pending: absences.filter(a => a.status === 'pending').length,
-    justified: absences.filter(a => a.status === 'justified').length,
-    unjustified: absences.filter(a => a.status === 'unjustified').length,
+    total: students.length,
+    presents: students.length - dayAttendances.filter(a => a.status === 'ABSENT' || a.status === 'LATE').length, // By default present
+    absents: dayAttendances.filter(a => a.status === 'ABSENT').length,
+    retards: dayAttendances.filter(a => a.status === 'LATE').length,
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-slate-50/50 pb-10">
       <TeacherHeader 
-        title="Gestion des absences" 
-        subtitle="Suivre et gérer les absences de vos élèves"
+        title="Appel et Présences" 
+        subtitle="Signaler les absences et les retards"
       />
       
-      <div className="p-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <p className="text-sm text-slate-500">Total absences</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.total}</p>
-          </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-sm text-amber-700">En attente</p>
-            <p className="mt-1 text-2xl font-semibold text-amber-900">{stats.pending}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-sm text-emerald-700">Justifiées</p>
-            <p className="mt-1 text-2xl font-semibold text-emerald-900">{stats.justified}</p>
-          </div>
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-            <p className="text-sm text-rose-700">Non justifiées</p>
-            <p className="mt-1 text-2xl font-semibold text-rose-900">{stats.unjustified}</p>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="p-6 max-w-5xl mx-auto">
+        
+        {/* Date Selector & Stats */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                type="search"
-                placeholder="Rechercher un élève..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 border-slate-200 bg-slate-50 pl-9 text-sm focus:bg-white"
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+              <CalendarDays className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500 font-medium">Date de l'appel</p>
+              <input 
+                type="date" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="mt-1 font-bold text-slate-900 border-none p-0 focus:ring-0 cursor-pointer bg-transparent"
               />
             </div>
-
-            <div className="relative">
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-4 pr-10 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              >
-                <option value="all">Toutes les classes</option>
-                {classes.map((cls) => (
-                  <option key={cls} value={cls}>{cls}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
+          
+          <div className="flex gap-4 sm:gap-8">
+            <div className="text-center">
+              <p className="text-sm text-slate-500">Effectif</p>
+              <p className="text-xl font-bold text-slate-900">{stats.total}</p>
             </div>
-
-            <div className="relative">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-4 pr-10 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              >
-                <option value="all">Tous les statuts</option>
-                <option value="pending">En attente</option>
-                <option value="justified">Justifiées</option>
-                <option value="unjustified">Non justifiées</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <div className="text-center">
+              <p className="text-sm text-emerald-600">Présents</p>
+              <p className="text-xl font-bold text-emerald-700">{stats.presents}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-rose-600">Absents</p>
+              <p className="text-xl font-bold text-rose-700">{stats.absents}</p>
             </div>
           </div>
-
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700">
-            <Plus className="h-4 w-4" />
-            Signaler une absence
-          </Button>
         </div>
 
-        {/* Absences List */}
-        <div className="mt-6 space-y-3">
-          {filteredAbsences.map((absence) => {
-            const status = statusConfig[absence.status];
-            const StatusIcon = status.icon;
+        {errorMsg && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm font-medium">
+            {errorMsg}
+          </div>
+        )}
 
-            return (
-              <div
-                key={absence.id}
-                className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-4 transition-all hover:shadow-md"
-              >
-                <Avatar className="h-12 w-12 border-2 border-slate-100">
-                  <AvatarFallback className="bg-slate-100 text-slate-600">
-                    {absence.student.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
+        {/* Students List */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <h2 className="font-bold text-slate-700">Liste des élèves</h2>
+            <p className="text-xs text-slate-500 italic">L'enregistrement est automatique lors du clic</p>
+          </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3">
-                    <p className="font-semibold text-slate-900">{absence.student.name}</p>
-                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                      {absence.student.class}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-4 text-sm text-slate-500">
-                    <span>{format(absence.date, 'EEEE d MMMM', { locale: fr })}</span>
-                    <span>•</span>
-                    <span>{absence.period}</span>
-                    <span>•</span>
-                    <span>{absence.subject}</span>
-                  </div>
-                  {absence.justification && (
-                    <div className="mt-2 flex items-center gap-2 text-sm">
-                      <FileText className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="text-slate-600">{absence.justification}</span>
+          {fetching ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+              <p>Chargement de la liste d'appel...</p>
+            </div>
+          ) : students.length === 0 ? (
+            <div className="py-16 text-center text-slate-500 italic">
+              Aucun élève n'est assigné à votre classe.
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {students.map((student, idx) => {
+                // Determine current status
+                const att = attendances.find(a => a.student_id === student.matricule && a.date === selectedDate);
+                const status = att ? att.status : 'PRESENT';
+                const isLoading = loadingMap[student.matricule];
+
+                return (
+                  <div key={student.matricule} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-8 text-center text-sm font-bold text-slate-400">
+                        {idx + 1}.
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 border border-slate-200 shadow-sm">
+                        {student.nom.charAt(0)}{student.prenom?.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900">{student.nom} {student.prenom}</p>
+                        <p className="text-xs text-slate-500">Matricule: {student.matricule}</p>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                <div className={cn(
-                  'flex items-center gap-2 rounded-lg px-3 py-1.5',
-                  status.bg
-                )}>
-                  <StatusIcon className={cn('h-4 w-4', status.text)} />
-                  <span className={cn('text-sm font-medium', status.text)}>
-                    {status.label}
-                  </span>
-                </div>
-
-                {absence.status === 'pending' && (
-                  <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100">
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-50 text-rose-600 transition-colors hover:bg-rose-100">
-                      <X className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2 pl-12 sm:pl-0">
+                      {isLoading ? (
+                        <div className="flex items-center gap-2 px-4 py-2 text-slate-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span className="text-sm">Enregistrement...</span>
+                        </div>
+                      ) : (
+                        <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+                          <button
+                            onClick={() => handleStatusChange(student.matricule, 'PRESENT')}
+                            className={cn(
+                              "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                              status === 'PRESENT' 
+                                ? "bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-200" 
+                                : "text-slate-500 hover:text-slate-700"
+                            )}
+                          >
+                            <Check className={cn("w-4 h-4", status === 'PRESENT' ? "text-emerald-500" : "opacity-50")} />
+                            Présent
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(student.matricule, 'ABSENT')}
+                            className={cn(
+                              "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                              status === 'ABSENT' 
+                                ? "bg-white text-rose-700 shadow-sm ring-1 ring-rose-200" 
+                                : "text-slate-500 hover:text-slate-700"
+                            )}
+                          >
+                            <X className={cn("w-4 h-4", status === 'ABSENT' ? "text-rose-500" : "opacity-50")} />
+                            Absent
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
+
       </div>
     </main>
   );

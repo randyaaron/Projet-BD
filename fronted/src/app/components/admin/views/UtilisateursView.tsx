@@ -128,7 +128,7 @@ export function UtilisateursView() {
         {tab === 'enseignants' && (
           <table className="w-full text-sm">
             <thead><tr className="border-b border-slate-100 bg-slate-50">
-              {['Enseignant', 'Username / MDP', 'Mobile', 'Email', 'Cours habilité'].map(h => (
+              {['Enseignant', 'Username / MDP', 'Mobile', 'Email', 'Statut'].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-slate-500 text-xs uppercase tracking-wide font-semibold">{h}</th>
               ))}
             </tr></thead>
@@ -152,11 +152,12 @@ export function UtilisateursView() {
                   <td className="px-5 py-3 text-slate-500 text-xs">{e.mobile || '—'}</td>
                   <td className="px-5 py-3 text-slate-400 text-xs">{e.email || '—'}</td>
                   <td className="px-5 py-3">
-                    {e.coursHabilite && (
-                      <span className="flex items-center gap-1 text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded font-semibold w-fit">
-                        <BookOpen className="w-3 h-3" />{e.coursHabilite}
-                      </span>
-                    )}
+                    <button
+                      onClick={() => handleToggle(e.id, 'enseignant')}
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${e.actif ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                    >
+                      {e.actif ? 'Actif' : 'Inactif'}
+                    </button>
                   </td>
                 </tr>
               ))}

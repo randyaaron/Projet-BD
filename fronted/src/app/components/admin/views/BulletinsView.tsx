@@ -12,8 +12,21 @@ export function BulletinsView() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterClasse, setFilterClasse] = useState('');
+  const [selectedBulletin, setSelectedBulletin] = useState<any>(null);
 
   useEffect(() => { fetchAll(); }, []);
+
+  const openBulletin = async (matricule: number) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/legacy/admin/bulletin/${matricule}`);
+      if (!res.ok) throw new Error('Erreur de chargement du bulletin');
+      const payload = await res.json();
+      setSelectedBulletin(payload);
+    } catch (e) {
+      console.error(e);
+      alert('Impossible de charger le bulletin');
+    }
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -75,16 +88,7 @@ export function BulletinsView() {
         ))}
       </div>
 
-      {/* Info développement */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
-        <BookOpen className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-blue-800 text-sm font-semibold">Module bulletins — En cours d'intégration</p>
-          <p className="text-blue-600 text-xs mt-0.5">
-            Les notes sont saisies par les enseignants via leur interface. La génération PDF des bulletins sera disponible dès que les évaluations seront enregistrées dans la table <code className="bg-blue-100 px-1 rounded">Evaluation</code>.
-          </p>
-        </div>
-      </div>
+
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
@@ -109,11 +113,12 @@ export function BulletinsView() {
               {['Matricule', 'Élève', 'Sexe', 'Rapports disciplinaires', 'Statut'].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-slate-500 text-xs uppercase tracking-wide font-semibold">{h}</th>
               ))}
+              <th className="text-left px-5 py-3 text-slate-500 text-xs uppercase tracking-wide font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filtered.length === 0 && (
-              <tr><td colSpan={5} className="text-center py-10 text-slate-400 text-sm">Aucun élève trouvé.</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-slate-400 text-sm">Aucun élève trouvé.</td></tr>
             )}
             {filtered.map((e: any) => {
               const nbRapports = rapportParMatricule[e.matricule] || 0;
@@ -143,12 +148,102 @@ export function BulletinsView() {
                       {e.actif ? 'Actif' : 'Inactif'}
                     </span>
                   </td>
+                  <td className="px-5 py-3">
+                    <button 
+                      onClick={() => openBulletin(e.matricule)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-white hover:shadow-sm transition-all"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Voir Bulletin
+                    </button>
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {/* MODAL BULLETIN */}
+      {selectedBulletin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <FileOutput className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Bulletin Scolaire</h2>
+                  <p className="text-sm text-slate-500">
+                    {selectedBulletin.eleve.nom} {selectedBulletin.eleve.prenom} • Classe: {selectedBulletin.classe}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedBulletin(null)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+                <CheckCircle className="w-5 h-5 opacity-0 absolute" />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-1">
+              {/* Header Bulletin */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-500 font-semibold">MOYENNE GÉNÉRALE</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-1">
+                    {selectedBulletin.moyenne_generale !== null ? `${selectedBulletin.moyenne_generale}/20` : 'N/A'}
+                  </p>
+                  <span className="inline-block mt-2 px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded">
+                    {selectedBulletin.mention}
+                  </span>
+                </div>
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-xs text-slate-500 font-semibold">ASSIDUITÉ</p>
+                  <p className="text-3xl font-bold text-slate-900 mt-1">
+                    {selectedBulletin.total_absences}
+                  </p>
+                  <p className="text-sm text-slate-500 mt-2">Absences enregistrées</p>
+                </div>
+              </div>
+
+              {/* Notes table */}
+              <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-semibold text-slate-600">Matière</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Moyenne</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {selectedBulletin.matieres.length === 0 ? (
+                      <tr><td colSpan={2} className="px-4 py-8 text-center text-slate-400 italic">Aucune note enregistrée</td></tr>
+                    ) : (
+                      selectedBulletin.matieres.map((m: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="px-4 py-3 font-medium text-slate-900">{m.matiere}</td>
+                          <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                            {m.moyenne !== null ? m.moyenne : '-'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
+              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                <Send className="w-4 h-4" /> Envoyer au parent
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                <FileOutput className="w-4 h-4" /> Exporter PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
