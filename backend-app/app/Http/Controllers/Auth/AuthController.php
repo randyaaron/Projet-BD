@@ -28,6 +28,13 @@ class AuthController extends Controller
             ->orWhere('email', $user->email)
             ->first();
 
+        if ($legacyPersonne && $user->role === \App\Enums\Role::TEACHER) {
+            $enseignant = \Illuminate\Support\Facades\DB::table('Enseignant')->where('idPers', $legacyPersonne->idPers)->first();
+            if (!$enseignant || !$enseignant->Actif) {
+                return response()->json(['message' => 'Ce compte enseignant est désactivé. Contactez l\'administration.'], 403);
+            }
+        }
+
         return response()->json([
             'token' => $token,
             'user' => [

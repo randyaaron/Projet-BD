@@ -109,4 +109,52 @@ class LegacyStudentController extends Controller
             'data'    => $updated,
         ]);
     }
+
+    public function toggleActif(int $matricule)
+    {
+        $current = DB::table('Eleve')->where('matricule', $matricule)->value('actif');
+        $newStatus = $current ? 0 : 1;
+
+        DB::table('Eleve')->where('matricule', $matricule)->update(['actif' => $newStatus]);
+        if ($newStatus == 0) {
+            DB::table('Frequente')->where('matricule', $matricule)->delete();
+        }
+        
+        return response()->json([
+            'message' => 'Statut de l\'élève mis à jour avec succès',
+            'actif' => $newStatus
+        ]);
+    }
+
+    public function assignClass(Request $request, int $matricule)
+    {
+        $idSalle = $request->input('idSalle');
+
+        $student = DB::table('Eleve')->where('matricule', $matricule)->first();
+        if (!$student) return response()->json(['message' => 'Élève introuvable'], 404);
+        if (!$student->actif) return response()->json(['message' => 'Impossible d\'affecter un élève inactif'], 403);
+
+        if (!$idSalle) {
+            DB::table('Frequente')->where('matricule', $matricule)->delete();
+            return response()->json(['message' => 'Affectation retirée']);
+        }
+
+        $salle = DB::table('Salle')->where('idSalle', $idSalle)->first();
+        if (!$salle) return response()->json(['message' => 'Salle introuvable'], 404);
+        if (!$salle->actif) return response()->json(['message' => 'Impossible d\'affecter à une salle inactive'], 403);
+
+        $exists = DB::table('Frequente')->where('matricule', $matricule)->first();
+        if ($exists) {
+            DB::table('Frequente')->where('matricule', $matricule)->update(['idSalle' => $idSalle]);
+        } else {
+            DB::table('Frequente')->insert([
+                'matricule' => $matricule,
+                'idSalle' => $idSalle,
+                'idAcademi' => 1,
+                'idAdmin' => 1,
+            ]);
+        }
+
+        return response()->json(['message' => 'Classe affectée avec succès']);
+    }
 }

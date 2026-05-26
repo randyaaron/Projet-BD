@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import {
@@ -35,7 +35,7 @@ interface Assessment {
   subject_id: number;
 }
 
-export default function HomeworkPage() {
+function HomeworkContent() {
   const searchParams = useSearchParams();
   const [uid, setUid] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export default function HomeworkPage() {
     subject_id: '',
     type: 'Devoir',
     total_points: '20',
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     duration: '' // Kept for UI completeness, backend ignores it
   });
 
@@ -72,6 +72,11 @@ export default function HomeworkPage() {
       try {
         setFetching(true);
         const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/context/${uid}`);
+        if (res.status === 404) {
+          const body = await res.json();
+          setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
+          return;
+        }
         if (!res.ok) throw new Error('Erreur de chargement');
         const data = await res.json();
 
@@ -118,11 +123,12 @@ export default function HomeworkPage() {
         type: newAss.type,
         date: newAss.date,
         total_points: parseFloat(newAss.total_points),
-        subject_id: parseInt(newAss.subject_id)
+        subject_id: parseInt(newAss.subject_id),
+        status: data.status
       }, ...prev]);
 
       setShowModal(false);
-      setNewAss({ title: '', subject_id: '', type: 'Devoir', total_points: '20', date: '', duration: '' });
+      setNewAss({ title: '', subject_id: '', type: 'Devoir', total_points: '20', date: new Date().toISOString().split('T')[0], duration: '' });
     } catch (err) {
       console.error(err);
       alert('Erreur lors de la création.');
@@ -194,19 +200,20 @@ export default function HomeworkPage() {
                   <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Type</th>
                   <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Date</th>
                   <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Barème</th>
+                  <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase tracking-wider">Statut</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {fetching ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400">
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-400">
                       <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-500" /></div>
                       <p className="mt-2">Chargement...</p>
                     </td>
                   </tr>
                 ) : assessments.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-10 text-center text-slate-400 italic">
+                    <td colSpan={5} className="px-6 py-10 text-center text-slate-400 italic">
                       Aucune épreuve créée pour l'instant.
                     </td>
                   </tr>
@@ -237,6 +244,35 @@ export default function HomeworkPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-700">/ {ass.total_points}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={ass.status || (ass.type === 'Devoir' ? 'en cours' : 'planifiée')}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            try {
+                              const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${ass.id}/status`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus })
+                              });
+                              if (res.ok) {
+                                setAssessments(prev => prev.map(a => a.id === ass.id ? { ...a, status: newStatus } : a));
+                              }
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                          className={cn("text-xs font-semibold rounded-md px-2 py-1 border outline-none cursor-pointer",
+                            (ass.status || 'planifiée') === 'planifiée' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                            (ass.status || 'planifiée') === 'en cours' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                            'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          )}
+                        >
+                          {ass.type !== 'Devoir' && <option value="planifiée">Planifiée</option>}
+                          <option value="en cours">En cours</option>
+                          <option value="corrigée">Corrigée</option>
+                        </select>
                       </td>
                     </tr>
                   ))
@@ -285,7 +321,14 @@ export default function HomeworkPage() {
                   <label className="block text-sm font-semibold text-slate-700 mb-1">Type *</label>
                   <select
                     value={newAss.type}
-                    onChange={e => setNewAss({ ...newAss, type: e.target.value })}
+                    onChange={e => {
+                      const newType = e.target.value;
+                      setNewAss({
+                        ...newAss,
+                        type: newType,
+                        date: newType === 'Devoir' ? new Date().toISOString().split('T')[0] : newAss.date
+                      });
+                    }}
                     className="w-full h-10 px-3 rounded-md border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
                   >
                     <option value="Devoir">Devoir</option>
@@ -296,24 +339,28 @@ export default function HomeworkPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Date *</label>
-                  <Input
-                    type="date"
-                    value={newAss.date}
-                    onChange={e => setNewAss({ ...newAss, date: e.target.value })}
-                    className="bg-slate-50 border-slate-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Durée (optionnel)</label>
-                  <Input
-                    placeholder="Ex : 2h"
-                    value={newAss.duration}
-                    onChange={e => setNewAss({ ...newAss, duration: e.target.value })}
-                    className="bg-slate-50 border-slate-200"
-                  />
-                </div>
+                {newAss.type !== 'Devoir' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Date *</label>
+                    <Input
+                      type="date"
+                      value={newAss.date}
+                      onChange={e => setNewAss({ ...newAss, date: e.target.value })}
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
+                )}
+                {newAss.type !== 'Devoir' && (
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Durée (optionnel)</label>
+                    <Input
+                      placeholder="Ex : 2h"
+                      value={newAss.duration}
+                      onChange={e => setNewAss({ ...newAss, duration: e.target.value })}
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -342,5 +389,13 @@ export default function HomeworkPage() {
       )}
 
     </main>
+  );
+}
+
+export default function HomeworkPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <HomeworkContent />
+    </Suspense>
   );
 }

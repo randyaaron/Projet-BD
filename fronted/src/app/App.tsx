@@ -31,7 +31,8 @@ export default function App() {
       const uid = localStorage.getItem('user_id') || '';
       window.location.href = `http://localhost:3001/teacher?userId=${uid}`;
     } else if (role === 'parent') {
-      window.location.href = 'http://localhost:3002';
+      const uid = localStorage.getItem('user_id') || '';
+      window.location.href = `http://localhost:3002/parent?userId=${uid}`;
     }
   };
 

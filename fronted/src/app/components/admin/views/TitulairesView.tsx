@@ -215,7 +215,7 @@ export function TitulairesView() {
               <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Salle (classe) *</label>
               <select required value={form.idSalle} onChange={e => setForm({ ...form, idSalle: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                 <option value="">-- Sélectionner --</option>
-                {salles.map((s: any) => (
+                {salles.filter((s: any) => s.actif === 1).map((s: any) => (
                   <option key={s.idSalle} value={s.idSalle}>
                     {s.libelle} → {s.classeLibelle || 'Non assignée'}
                   </option>

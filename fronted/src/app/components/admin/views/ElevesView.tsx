@@ -38,12 +38,18 @@ export function ElevesView() {
   };
 
   const getCompatibleSalles = (currentClass: string) => {
-    if (!currentClass) return sallesList;
+    // Only rooms that are active AND have a real class assigned (not null)
+    const assignedRooms = sallesList.filter((s: any) => s.actif === 1 && s.idClasse);
+    if (!currentClass || currentClass === 'Non assigné' || currentClass === 'Non assignée') {
+      return assignedRooms; // show all available rooms when no class yet
+    }
     const prefix = currentClass.split('-')[0];
-    return sallesList.filter(s => {
-      const sLib = s.classeLibelle || s.libelle;
-      return sLib && sLib.startsWith(prefix);
+    const compatible = assignedRooms.filter((s: any) => {
+      const sLib = s.classeLibelle || '';
+      return sLib.startsWith(prefix);
     });
+    // If no compatible rooms found for this prefix, return all rooms
+    return compatible.length > 0 ? compatible : assignedRooms;
   };
 
   const handleAssignClass = async (matricule: number, idSalle: string) => {
@@ -70,9 +76,22 @@ export function ElevesView() {
   };
 
   const handleToggleActif = async (matricule: number) => {
+    const eleve = eleves.find(e => e.matricule === matricule);
+    const willBeActive = eleve ? !eleve.actif : false;
     try {
       await legacyFetch(`${API}/eleves/${matricule}/toggle`, { method: 'PATCH' });
-      setEleves(prev => prev.map(e => e.matricule === matricule ? { ...e, actif: e.actif ? 0 : 1 } : e));
+      if (willBeActive) {
+        // Reactivation: refresh from server to get real data
+        await fetchEleves();
+      } else {
+        // Deactivation: optimistic update is fine
+        setEleves(prev => prev.map(e => e.matricule === matricule ? {
+          ...e,
+          actif: 0,
+          idSalle: null,
+          classe: null
+        } : e));
+      }
     } catch (e: any) { alert(e.message || 'Erreur lors du changement de statut'); }
   };
 
@@ -133,20 +152,12 @@ export function ElevesView() {
           <option value="1">Garçons</option>
           <option value="2">Filles</option>
         </select>
-        {selected.length > 0 && (
-          <button className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-100 transition-colors" style={{ fontWeight: 600 }}>
-            <Trash2 className="w-4 h-4" /> Supprimer ({selected.length})
-          </button>
-        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
-              <th className="px-5 py-3 w-10">
-                <input type="checkbox" className="rounded" onChange={e => setSelected(e.target.checked ? paged.map(el => el.matricule) : [])} />
-              </th>
               {['Matricule', 'Élève', 'Classe', 'Naissance', 'Statut', ''].map(h => (
                 <th key={h} className="text-left px-3 py-3 text-slate-500 text-xs uppercase tracking-wide" style={{ fontWeight: 600 }}>{h}</th>
               ))}
@@ -154,10 +165,7 @@ export function ElevesView() {
           </thead>
           <tbody className="divide-y divide-slate-50">
             {paged.map(el => (
-              <tr key={el.matricule} className={`hover:bg-slate-50 transition-colors ${selected.includes(el.matricule) ? 'bg-blue-50/40' : ''}`}>
-                <td className="px-5 py-3">
-                  <input type="checkbox" checked={selected.includes(el.matricule)} onChange={() => toggleSelect(el.matricule)} className="rounded" />
-                </td>
+              <tr key={el.matricule} className="hover:bg-slate-50 transition-colors">
                 <td className="px-3 py-3 text-slate-500 text-xs">{el.matricule}</td>
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-2.5">
@@ -174,16 +182,22 @@ export function ElevesView() {
                   <div className="flex items-center gap-2">
                     {assignLoading === String(el.matricule) ? (
                       <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    ) : !el.actif ? (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-md text-xs" style={{ fontWeight: 600 }}>
+                        {el.classe || 'Non assigné'}
+                      </span>
                     ) : (
-                      <select 
-                        value={el.idSalle || ''} 
+                      <select
+                        value={el.idSalle || ''}
                         onChange={(e) => handleAssignClass(el.matricule, e.target.value)}
-                        className={`text-xs font-semibold px-2 py-1 rounded-md border outline-none cursor-pointer transition-colors ${el.classe ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                        className={`text-xs font-semibold px-2 py-1 rounded-md border outline-none cursor-pointer transition-colors ${
+                          el.classe ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                        }`}
                       >
-                        <option value="" disabled>Non assigné</option>
+                        <option value="">-- Non assigné --</option>
                         {getCompatibleSalles(el.classe).map((s: any) => (
                           <option key={s.idSalle} value={s.idSalle}>
-                            {s.classeLibelle || s.libelle}
+                            {s.classeLibelle}
                           </option>
                         ))}
                       </select>

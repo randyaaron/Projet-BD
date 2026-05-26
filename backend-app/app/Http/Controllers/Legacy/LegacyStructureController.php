@@ -20,6 +20,7 @@ class LegacyStructureController extends Controller
                 DB::raw('COALESCE(Cycle.libelle, "N/A") as cycleLibelle')
             )
             ->where('Classe.isDelete', 0)
+            ->where('Classe.idClasse', '!=', 999)
             ->get();
 
         return response()->json([
@@ -38,8 +39,8 @@ class LegacyStructureController extends Controller
                 'Salle.position',
                 'Salle.surface',
                 'Salle.actif',
-                'Salle.idClasse',
-                DB::raw('COALESCE(Classe.libelle, "Non assignée") as classeLibelle')
+                DB::raw('IF(Salle.idClasse = 999, "Non assignée", COALESCE(Classe.libelle, "Non assignée")) as classeLibelle'),
+                DB::raw('IF(Salle.idClasse = 999, NULL, Salle.idClasse) as idClasse')
             )
             ->get();
 
@@ -126,20 +127,24 @@ class LegacyStructureController extends Controller
 
         $nextId = (DB::table('Salle')->max('idSalle') ?? 0) + 1;
 
-        if (isset($data['idClasse']) && $data['idClasse']) {
-            // Delete existing rooms for this class to enforce 1-to-1 relationship
-            DB::table('Salle')->where('idClasse', $data['idClasse'])->delete();
-        }
-
         DB::table('Salle')->insert([
             'idSalle'  => $nextId,
             'libelle'  => $data['libelle'],
             'position' => $data['position'] ?? 'NON DEFINI',
             'surface'  => '',
-            'idClasse' => $data['idClasse'] ?? 1,
+            'idClasse' => $data['idClasse'] ?: 999,
             'actif'    => 1,
             'idAdmin'  => 1,
         ]);
+
+        if (isset($data['idClasse']) && $data['idClasse'] && $data['idClasse'] != 999) {
+            $oldSalle = DB::table('Salle')->where('idClasse', $data['idClasse'])->where('idSalle', '!=', $nextId)->first();
+            if ($oldSalle) {
+                DB::table('Frequente')->where('idSalle', $oldSalle->idSalle)->update(['idSalle' => $nextId]);
+                DB::table('Titulaire')->where('idSalle', $oldSalle->idSalle)->update(['idSalle' => $nextId]);
+                DB::table('Salle')->where('idSalle', $oldSalle->idSalle)->update(['idClasse' => 999]);
+            }
+        }
 
         $row = DB::table('Salle')->where('idSalle', $nextId)->first();
         return response()->json(['message' => 'Salle créée', 'data' => $row], 201);

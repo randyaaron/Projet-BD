@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
@@ -50,7 +50,7 @@ const getAverageColor = (average: number) => {
   return 'text-rose-600 bg-rose-50';
 };
 
-export default function StudentsPage() {
+function StudentsContent() {
   const searchParams = useSearchParams();
   const [uid, setUid] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -79,6 +79,11 @@ export default function StudentsPage() {
         setLoading(true);
         // Using grades context to get students for this teacher
         const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        if (res.status === 404) {
+          const body = await res.json();
+          setError(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
+          return;
+        }
         if (!res.ok) throw new Error('Erreur de chargement');
         const data = await res.json();
 
@@ -318,5 +323,13 @@ export default function StudentsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function StudentsPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <StudentsContent />
+    </Suspense>
   );
 }

@@ -63,7 +63,8 @@ class LegacyUserController extends Controller
                 DB::raw("1 as actif"),
                 'Personne.created_at',
                 'Eleve.nom as eleveNom',
-                'Eleve.prenom as elevePrenom'
+                'Eleve.prenom as elevePrenom',
+                'Eleve.matricule'
             )->get();
 
         return response()->json([
@@ -186,7 +187,11 @@ class LegacyUserController extends Controller
             DB::table('Admin')->where('ID', $id)->update(['actif' => $current ? 0 : 1]);
         } elseif ($source === 'enseignant') {
             $current = DB::table('Enseignant')->where('idPers', $id)->value('Actif');
-            DB::table('Enseignant')->where('idPers', $id)->update(['Actif' => $current ? 0 : 1]);
+            $newStatus = $current ? 0 : 1;
+            DB::table('Enseignant')->where('idPers', $id)->update(['Actif' => $newStatus]);
+            if ($newStatus == 0) {
+                DB::table('Titulaire')->where('idPers', $id)->delete();
+            }
         } else {
             $current = DB::table('Personne')->where('idPers', $id)->value('isDelete');
             DB::table('Personne')->where('idPers', $id)->update(['isDelete' => $current ? 0 : 1]);

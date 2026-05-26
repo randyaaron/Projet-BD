@@ -3,12 +3,11 @@
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { StatCard } from '@/components/teacher/stat-card';
 import { QuickActions } from '@/components/teacher/quick-actions';
-import { UpcomingHomework } from '@/components/teacher/upcoming-homework';
 import { Users, UserX, BookOpen, Loader2, RefreshCw } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function TeacherDashboard() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -118,12 +117,15 @@ export default function TeacherDashboard() {
         <div className="mt-6">
           <QuickActions />
         </div>
-
-        {/* Devoirs à venir */}
-        <div className="mt-6 max-w-2xl">
-          <UpcomingHomework fullData={data} />
-        </div>
       </div>
     </main>
+  );
+}
+
+export default function TeacherDashboard() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import { 
@@ -33,7 +33,7 @@ interface Assessment {
   subject_id: number;
 }
 
-export default function GradesPage() {
+function GradesContent() {
   const searchParams = useSearchParams();
   const [uid, setUid] = useState<string | null>(null);
 
@@ -75,6 +75,11 @@ export default function GradesPage() {
         setFetching(true);
         // Fetch base context (students, subjects, examen grades from Evaluation table)
         const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        if (resCtx.status === 404) {
+          const body = await resCtx.json();
+          setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
+          return;
+        }
         if (!resCtx.ok) throw new Error('Erreur de chargement');
         const ctxData = await resCtx.json();
         
@@ -330,7 +335,8 @@ export default function GradesPage() {
                             "flex items-center text-left p-3 rounded-xl border transition-all",
                             selectedStudent?.matricule === student.matricule 
                               ? "bg-blue-50 border-blue-200 shadow-sm" 
-                              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                              : "bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50",
+                            !student.actif && "opacity-60"
                           )}
                         >
                           <div className={cn(
@@ -342,12 +348,17 @@ export default function GradesPage() {
                             {student.nom.charAt(0)}{student.prenom?.charAt(0)}
                           </div>
                           <div className="flex-1 overflow-hidden">
-                            <p className={cn(
-                              "font-semibold text-sm truncate",
-                              selectedStudent?.matricule === student.matricule ? "text-blue-900" : "text-slate-700"
-                            )}>
-                              {student.nom} {student.prenom}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className={cn(
+                                "font-semibold text-sm truncate",
+                                selectedStudent?.matricule === student.matricule ? "text-blue-900" : "text-slate-700"
+                              )}>
+                                {student.nom} {student.prenom}
+                              </p>
+                              {!student.actif && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">Inactif</span>
+                              )}
+                            </div>
                             <p className="text-xs text-slate-400">Matricule: {student.matricule}</p>
                           </div>
                         </button>
@@ -368,24 +379,36 @@ export default function GradesPage() {
                       <>
                         <div className="flex items-center justify-between mb-6 pb-6 border-b border-slate-100">
                           <div>
-                            <h2 className="text-2xl font-bold text-slate-900">
-                              {selectedStudent.nom} {selectedStudent.prenom}
-                            </h2>
+                            <div className="flex items-center gap-3">
+                              <h2 className="text-2xl font-bold text-slate-900">
+                                {selectedStudent.nom} {selectedStudent.prenom}
+                              </h2>
+                              {!selectedStudent.actif && (
+                                <span className="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">Inactif</span>
+                              )}
+                            </div>
                             <p className="text-slate-500 text-sm mt-1">Saisie des notes d'examen par matière (sur 20)</p>
                           </div>
-                          <Button onClick={saveExamenGrades} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
+                          <Button onClick={saveExamenGrades} disabled={saving || !selectedStudent.actif} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
                             {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sauvegarde...</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
                           </Button>
                         </div>
+
+                        {!selectedStudent.actif && (
+                          <div className="mb-6 p-4 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 text-sm font-medium">
+                            Cet élève est inactif. Vous ne pouvez pas modifier ses notes.
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {subjects.map(subject => {
                             const val = examenGradesMap[selectedStudent.matricule]?.[subject.id] || '';
                             const isFilled = val !== '';
                             return (
-                              <div key={subject.id} className={cn("p-4 rounded-xl border transition-colors", isFilled ? "bg-emerald-50/30 border-emerald-100" : "bg-slate-50 border-slate-100")}>
+                              <div key={subject.id} className={cn("p-4 rounded-xl border transition-colors", isFilled ? "bg-emerald-50/30 border-emerald-100" : "bg-slate-50 border-slate-100", !selectedStudent.actif && "opacity-50 pointer-events-none")}>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2 truncate" title={subject.libelle}>{subject.libelle}</label>
                                 <div className="relative">
-                                  <Input type="text" placeholder=" / 20" value={val} onChange={(e) => handleExamenGradeChange(subject.id, e.target.value)} className={cn("text-lg font-bold pr-10", isFilled ? "border-emerald-200 focus-visible:ring-emerald-500 text-emerald-800" : "")} />
+                                  <Input disabled={!selectedStudent.actif} type="text" placeholder=" / 20" value={val} onChange={(e) => handleExamenGradeChange(subject.id, e.target.value)} className={cn("text-lg font-bold pr-10", isFilled ? "border-emerald-200 focus-visible:ring-emerald-500 text-emerald-800" : "")} />
                                   {isFilled && <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500"><Check className="w-4 h-4" /></div>}
                                 </div>
                               </div>
@@ -446,7 +469,7 @@ export default function GradesPage() {
                             const totalPts = selectedAssObj?.total_points || 20;
                             
                             return (
-                              <tr key={student.matricule} className="hover:bg-slate-50/50 transition-colors">
+                              <tr key={student.matricule} className={cn("hover:bg-slate-50/50 transition-colors", !student.actif && "bg-slate-50/50 opacity-60")}>
                                 <td className="px-6 py-4 text-center font-medium text-slate-400">{idx + 1}</td>
                                 <td className="px-6 py-4">
                                   <div className="flex items-center gap-3">
@@ -454,7 +477,10 @@ export default function GradesPage() {
                                       {student.nom.charAt(0)}
                                     </div>
                                     <div>
-                                      <p className="font-bold text-slate-900">{student.nom} {student.prenom}</p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-bold text-slate-900">{student.nom} {student.prenom}</p>
+                                        {!student.actif && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">Inactif</span>}
+                                      </div>
                                       <p className="text-xs text-slate-500">{student.matricule}</p>
                                     </div>
                                   </div>
@@ -462,13 +488,14 @@ export default function GradesPage() {
                                 <td className="px-6 py-4">
                                   <div className="relative flex justify-center">
                                     <Input
+                                      disabled={!student.actif}
                                       type="text"
                                       placeholder={`/ ${totalPts}`}
                                       value={val}
                                       onChange={(e) => handleAssessmentGradeChange(student.matricule, e.target.value, totalPts)}
                                       className={cn(
                                         "w-24 text-center text-lg font-bold transition-all shadow-sm",
-                                        isFilled ? "border-emerald-300 bg-emerald-50/30 focus-visible:ring-emerald-500 text-emerald-800" : "bg-white border-slate-200"
+                                        isFilled && student.actif ? "border-emerald-300 bg-emerald-50/30 focus-visible:ring-emerald-500 text-emerald-800" : "bg-white border-slate-200"
                                       )}
                                     />
                                     {isFilled && (
@@ -492,5 +519,13 @@ export default function GradesPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function GradesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <GradesContent />
+    </Suspense>
   );
 }

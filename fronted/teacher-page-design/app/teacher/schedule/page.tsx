@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { Loader2, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -21,7 +21,7 @@ const COURS_COLORS = [
   'bg-cyan-50 border-cyan-200 text-cyan-800',
 ];
 
-export default function SchedulePage() {
+function ScheduleContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [scheduleData, setScheduleData] = useState<any[]>([]);
@@ -163,5 +163,13 @@ export default function SchedulePage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function SchedulePage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <ScheduleContent />
+    </Suspense>
   );
 }

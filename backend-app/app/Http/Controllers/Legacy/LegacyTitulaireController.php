@@ -39,11 +39,13 @@ class LegacyTitulaireController extends Controller
             'idSalle' => ['required', 'integer'],
         ]);
 
-        // Vérifier que l'enseignant existe (typePersonne = 2 pour enseignant)
-        $personne = DB::table('Personne')->where('idPers', $data['idPers'])->first();
-        if (!$personne) {
-            return response()->json(['message' => 'Enseignant introuvable.'], 422);
-        }
+        $personne = DB::table('Enseignant')->where('idPers', $data['idPers'])->first();
+        if (!$personne) return response()->json(['message' => 'Enseignant introuvable.'], 422);
+        if (!$personne->Actif) return response()->json(['message' => 'Impossible d\'affecter un enseignant inactif.'], 403);
+        
+        $salle = DB::table('Salle')->where('idSalle', $data['idSalle'])->first();
+        if (!$salle) return response()->json(['message' => 'Salle introuvable.'], 404);
+        if (!$salle->actif) return response()->json(['message' => 'Impossible d\'affecter à une salle inactive.'], 403);
 
         // Supprimer les anciennes affectations :
         // 1. Un enseignant ne peut pas être titulaire de plusieurs salles

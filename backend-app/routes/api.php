@@ -77,8 +77,32 @@ Route::prefix('legacy')->group(function () {
         Route::post('/salles', [LegacyStructureController::class, 'createRoom']);
         Route::patch('/salles/{id}/toggle', function ($id) {
             $current = DB::table('Salle')->where('idSalle', $id)->value('actif');
-            DB::table('Salle')->where('idSalle', $id)->update(['actif' => $current ? 0 : 1]);
+            $newStatus = $current ? 0 : 1;
+            if ($newStatus == 1) {
+                // Reactivation: always reset to Non assignée first
+                DB::table('Salle')->where('idSalle', $id)->update(['actif' => 1, 'idClasse' => 999]);
+            } else {
+                // Deactivation: just mark inactive, keep class reference
+                DB::table('Salle')->where('idSalle', $id)->update(['actif' => 0]);
+            }
             return response()->json(['message' => 'Statut mis à jour']);
+        });
+        Route::patch('/salles/{id}/assign-class', function (Illuminate\Http\Request $request, $id) {
+            $idClasse = $request->input('idClasse');
+            $salle = DB::table('Salle')->where('idSalle', $id)->first();
+            if (!$salle) return response()->json(['message' => 'Salle introuvable'], 404);
+            if (!$salle->actif) return response()->json(['message' => 'Impossible d\'assigner une classe \u00e0 une salle inactive'], 403);
+            if ($idClasse && $idClasse != 999) {
+                // Libérer la classe de toute autre salle qui la possède
+                $oldSalle = DB::table('Salle')->where('idClasse', $idClasse)->where('idSalle', '!=', $id)->first();
+                if ($oldSalle) {
+                    DB::table('Frequente')->where('idSalle', $oldSalle->idSalle)->update(['idSalle' => $id]);
+                    DB::table('Titulaire')->where('idSalle', $oldSalle->idSalle)->update(['idSalle' => $id]);
+                    DB::table('Salle')->where('idSalle', $oldSalle->idSalle)->update(['idClasse' => 999]);
+                }
+            }
+            DB::table('Salle')->where('idSalle', $id)->update(['idClasse' => $idClasse ?: 999]);
+            return response()->json(['message' => 'Classe assign\u00e9e']);
         });
         Route::post('/trimestres', [LegacyStructureController::class, 'createTerm']);
         Route::post('/annees', [LegacyStructureController::class, 'createSchoolYear']);
@@ -239,8 +263,15 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
     $totalAbsences = 0;
     $totalDevoirs = 0;
     $upcomingAssessments = [];
+    $edt = [];
 
     if ($idClasse) {
+        $edt = DB::table('EmploiDuTemps')
+            ->join('Cours', 'EmploiDuTemps.idCours', '=', 'Cours.idCours')
+            ->where('EmploiDuTemps.idClasse', $idClasse)
+            ->select('EmploiDuTemps.jour', 'EmploiDuTemps.heure', 'Cours.libelle as subject', 'Cours.idCours')
+            ->orderBy('EmploiDuTemps.jour')->orderBy('EmploiDuTemps.heure')
+            ->get();
         $totalEleves = DB::table('Frequente')
             ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
             ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
@@ -283,7 +314,8 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
             'absences' => $totalAbsences,
             'devoirs' => $totalDevoirs
         ],
-        'upcomingAssessments' => $upcomingAssessments
+        'upcomingAssessments' => $upcomingAssessments,
+        'schedule' => $edt
     ]);
 });
 
@@ -306,7 +338,7 @@ Route::get('/legacy/teacher/grades/context/{id}', function ($id) {
         ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
         ->where('Salle.idClasse', $idClasse)
         ->where('Eleve.isDelete', 0)
-        ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom')
+        ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom', 'Eleve.actif')
         ->orderBy('Eleve.nom')
         ->get();
 
@@ -352,8 +384,7 @@ Route::post('/legacy/teacher/grades/student/{matricule}', function (Illuminate\H
 
         if ($existing) {
             DB::table('Evaluation')->where('idEval', $existing->idEval)->update([
-                'note' => $note,
-                'updated_at' => now()
+                'note' => $note
             ]);
         } else {
             DB::table('Evaluation')->insert([
@@ -445,6 +476,7 @@ Route::post('/legacy/teacher/attendance/student/{matricule}', function (Illumina
 
     return response()->json(['success' => true]);
 });
+Route::get('/legacy/parent/{idPers}/dashboard', [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getDashboard']);
 
 Route::get('/legacy/teacher/assessments/context/{id}', function ($id) {
     $titulaire = DB::table('Titulaire')
@@ -467,9 +499,9 @@ Route::get('/legacy/teacher/assessments/context/{id}', function ($id) {
         ->orderBy('libelle')
         ->get();
 
-    $assessments = DB::table('assessments')
+        $assessments = DB::table('assessments')
         ->where('school_class_id', $idClasse)
-        ->select('id', 'title', 'type', 'date', 'total_points', 'subject_id')
+        ->select('id', 'title', 'type', 'date', 'total_points', 'subject_id', 'status')
         ->orderBy('created_at', 'desc')
         ->get();
 
@@ -493,20 +525,32 @@ Route::post('/legacy/teacher/assessments/{id}', function (Illuminate\Http\Reques
 
     $idClasse = $titulaire->idClasse;
 
+    $type = $request->input('type');
+    $status = ($type === 'Devoir') ? 'en cours' : 'planifiée';
+
     $assessmentId = DB::table('assessments')->insertGetId([
         'school_class_id' => $idClasse,
         'teacher_id' => $id,
         'subject_id' => $request->input('subject_id'),
         'term_id' => 1, // default
         'title' => $request->input('title'),
-        'type' => $request->input('type'), // Devoir, Contrôle, Examen
+        'type' => $type, // Devoir, Contrôle, Examen
         'date' => $request->input('date'),
         'total_points' => $request->input('total_points'),
+        'status' => $status,
         'created_at' => now(),
         'updated_at' => now()
     ]);
 
-    return response()->json(['success' => true, 'id' => $assessmentId]);
+    return response()->json(['success' => true, 'id' => $assessmentId, 'status' => $status]);
+});
+
+Route::patch('/legacy/teacher/assessments/{id}/status', function (Illuminate\Http\Request $request, $id) {
+    DB::table('assessments')->where('id', $id)->update([
+        'status' => $request->input('status'),
+        'updated_at' => now()
+    ]);
+    return response()->json(['success' => true]);
 });
 
 Route::get('/legacy/teacher/assessments/{id}/grades', function ($id) {
@@ -520,7 +564,7 @@ Route::get('/legacy/teacher/assessments/{id}/grades', function ($id) {
         ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
         ->where('Salle.idClasse', $assessment->school_class_id)
         ->where('Eleve.isDelete', 0)
-        ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom')
+        ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom', 'Eleve.actif')
         ->orderBy('Eleve.nom')
         ->get();
 
@@ -623,6 +667,159 @@ Route::get('/legacy/admin/moyennes', function () {
         'en_difficulte' => $enDifficulte,
         'taux_reussite' => $tauxReussite,
     ]);
+});
+
+// =============================================================
+// ADMIN — Présences Globales
+// =============================================================
+Route::get('/legacy/admin/attendance', function () {
+    $today = \Carbon\Carbon::now()->toDateString();
+    $classes = DB::table('Classe')->get();
+    
+    $result = [];
+    foreach ($classes as $classe) {
+        $total = DB::table('Frequente')
+            ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+            ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
+            ->where('Salle.idClasse', $classe->idClasse)
+            ->where('Eleve.isDelete', 0)
+            ->where('Eleve.actif', 1)
+            ->count();
+            
+        if ($total == 0) continue;
+
+        $absents = DB::table('attendances')
+            ->where('school_class_id', $classe->idClasse)
+            ->where('status', 'ABSENT')
+            ->whereDate('date', $today)
+            ->count();
+
+        $result[] = [
+            'classe' => $classe->libelle,
+            'total' => $total,
+            'absents' => $absents,
+            'presents' => max(0, $total - $absents),
+        ];
+    }
+
+    return response()->json($result);
+});
+
+// =============================================================
+// ADMIN — Discipline
+// =============================================================
+Route::get('/legacy/admin/discipline', function () {
+    // Return all students with their discipline points and their sanctions
+    $eleves = DB::table('Eleve')
+        ->where('isDelete', 0)
+        ->select('matricule', 'nom', 'prenom')
+        ->get();
+
+    $result = [];
+    foreach ($eleves as $e) {
+        // Absences
+        $absences = DB::table('attendances')
+            ->where('student_id', $e->matricule)
+            ->where('status', 'ABSENT')
+            ->count();
+
+        // Sanctions
+        $sanctionsData = DB::table('sanctions')
+            ->where('student_id', $e->matricule)
+            ->get();
+
+        $malusSanctions = 0;
+        foreach ($sanctionsData as $s) {
+            $malusSanctions += $s->points;
+        }
+
+        $points = 100 - $absences - $malusSanctions;
+        $classe = DB::table('Frequente')
+            ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+            ->join('Classe', 'Salle.idClasse', '=', 'Classe.idClasse')
+            ->where('Frequente.matricule', $e->matricule)
+            ->value('Classe.libelle') ?? 'Non assigné';
+
+        $result[] = [
+            'matricule' => $e->matricule,
+            'nom' => $e->nom . ' ' . $e->prenom,
+            'classe' => $classe,
+            'points' => $points,
+            'absences' => $absences,
+            'malus_sanctions' => $malusSanctions,
+            'sanctions' => $sanctionsData
+        ];
+    }
+
+    return response()->json($result);
+});
+
+Route::post('/legacy/admin/discipline/sanctions', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'matricule' => 'required|integer',
+        'points' => 'required|integer',
+        'motif' => 'required|string',
+    ]);
+
+    DB::table('sanctions')->insert([
+        'student_id' => $request->matricule,
+        'points' => $request->points,
+        'motif' => $request->motif,
+        'date' => \Carbon\Carbon::now()->toDateString(),
+        'created_at' => \Carbon\Carbon::now(),
+        'updated_at' => \Carbon\Carbon::now()
+    ]);
+
+    return response()->json(['message' => 'Sanction ajoutée avec succès']);
+});
+
+Route::delete('/legacy/admin/discipline/sanctions/{id}', function ($id) {
+    DB::table('sanctions')->where('id', $id)->delete();
+    return response()->json(['message' => 'Sanction supprimée']);
+});
+
+// =============================================================
+// ADMIN — Épreuves (Lectures seules)
+// =============================================================
+Route::get('/legacy/admin/assessments', function () {
+    $assessments = DB::table('assessments')
+        ->join('Classe', 'assessments.school_class_id', '=', 'Classe.idClasse')
+        ->join('Cours', 'assessments.subject_id', '=', 'Cours.idCours')
+        ->join('Personne', 'assessments.teacher_id', '=', 'Personne.idPers')
+        ->select(
+            'assessments.id',
+            'assessments.title as titre',
+            'Cours.libelle as matiere',
+            'Classe.libelle as classe',
+            'assessments.type',
+            'assessments.date',
+            'assessments.total_points as max',
+            'assessments.status as statut',
+            'Personne.nom as enseignant_nom',
+            'Personne.prenom as enseignant_prenom'
+        )
+        ->orderBy('assessments.date', 'desc')
+        ->get()
+        ->map(function ($a) {
+            $a->enseignant = trim($a->enseignant_prenom . ' ' . $a->enseignant_nom);
+            
+            // Deduce a simple "cycle" logic based on class name if needed
+            $cycle = 'Inconnu';
+            if (strpos(strtoupper($a->classe), 'CP') !== false) $cycle = 'CP';
+            elseif (strpos(strtoupper($a->classe), 'CE1') !== false) $cycle = 'CE1';
+            elseif (strpos(strtoupper($a->classe), 'CE2') !== false) $cycle = 'CE2';
+            elseif (strpos(strtoupper($a->classe), 'CM1') !== false) $cycle = 'CM1';
+            elseif (strpos(strtoupper($a->classe), 'CM2') !== false) $cycle = 'CM2';
+            $a->cycle = $cycle;
+
+            $a->heure = '08h00';
+            $a->duree = '2h';
+            $a->max = intval($a->max);
+
+            return $a;
+        });
+
+    return response()->json($assessments);
 });
 
 // =============================================================

@@ -83,6 +83,12 @@ class LegacyAuthController extends Controller
             return response()->json(['message' => 'Mot de passe incorrect.'], 422);
         }
 
+        // Vérifier que l'enseignant est actif dans la table Enseignant
+        $enseignant = DB::table('Enseignant')->where('idPers', $personne->idPers)->first();
+        if (!$enseignant || !$enseignant->Actif) {
+            return response()->json(['message' => 'Ce compte enseignant est désactivé. Contactez l\'administration.'], 403);
+        }
+
         // Trouver la salle/classe de cet enseignant (titulaire)
         $salle = DB::table('Titulaire')
             ->join('Salle', 'Titulaire.idSalle', '=', 'Salle.idSalle')

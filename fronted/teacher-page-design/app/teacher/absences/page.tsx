@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import { 
@@ -29,7 +29,7 @@ interface Attendance {
   status: 'PRESENT' | 'ABSENT' | 'LATE';
 }
 
-export default function AbsencesPage() {
+function AbsencesContent() {
   const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -63,6 +63,11 @@ export default function AbsencesPage() {
       try {
         setFetching(true);
         const res = await fetch(`http://localhost:8000/api/legacy/teacher/attendance/context/${uid}`);
+        if (res.status === 404) {
+          const body = await res.json();
+          setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
+          return;
+        }
         if (!res.ok) throw new Error('Erreur lors du chargement des données.');
         
         const data = await res.json();
@@ -252,5 +257,13 @@ export default function AbsencesPage() {
 
       </div>
     </main>
+  );
+}
+
+export default function AbsencesPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Chargement...</div>}>
+      <AbsencesContent />
+    </Suspense>
   );
 }

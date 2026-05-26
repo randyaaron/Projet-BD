@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, AlertTriangle, CalendarDays } from 'lucide-react';
+import { legacyFetch } from '../../../lib/legacyApi';
+
+const API = 'http://localhost:8000/api/legacy';
 
 export function PresencesView() {
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
@@ -10,20 +13,10 @@ export function PresencesView() {
     setLoading(true);
     setError('');
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token') || localStorage.getItem('sanctum_token') || localStorage.getItem('legacy_token') || 'demo';
-      
-      const res = await fetch(`http://localhost:8000/api/teacher/attendance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        }
-      });
-      if (!res.ok) throw new Error('Erreur chargement présences');
-      const data = await res.json();
-      setAttendanceData(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur réseau');
+      const data = await legacyFetch<any[]>(`${API}/admin/attendance`);
+      setAttendanceData(data || []);
+    } catch (e: any) {
+      setError(e.message || 'Erreur réseau');
     } finally {
       setLoading(false);
     }
@@ -33,10 +26,9 @@ export function PresencesView() {
     loadAttendance();
   }, []);
 
-  const totalPresents = attendanceData.reduce((sum, item) => sum + item.presents, 0);
-  const totalAbsents = attendanceData.reduce((sum, item) => sum + item.absents, 0);
-  const totalRetards = attendanceData.reduce((sum, item) => sum + item.retards, 0);
-  const totalEleves = attendanceData.reduce((sum, item) => sum + item.total, 0);
+  const totalPresents = attendanceData.reduce((sum, item) => sum + (item.presents || 0), 0);
+  const totalAbsents = attendanceData.reduce((sum, item) => sum + (item.absents || 0), 0);
+  const totalEleves = attendanceData.reduce((sum, item) => sum + (item.total || 0), 0);
 
   const tauxPresence = totalEleves > 0 ? ((totalPresents / totalEleves) * 100).toFixed(1) : '0.0';
 
@@ -66,7 +58,7 @@ export function PresencesView() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
           <div className="flex items-center justify-between">
             <div>
@@ -102,18 +94,6 @@ export function PresencesView() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-500 text-sm font-medium">Retards</p>
-              <p className="text-2xl font-bold text-amber-600 mt-1">{totalRetards}</p>
-            </div>
-            <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center">
-              <Clock className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -124,15 +104,14 @@ export function PresencesView() {
               <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase">Effectif total</th>
               <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase">Présents</th>
               <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase">Absents</th>
-              <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase">Retards</th>
               <th className="px-6 py-4 font-semibold text-slate-600 text-xs uppercase">Taux de présence</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Chargement des données...</td></tr>
+              <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Chargement des données...</td></tr>
             ) : attendanceData.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Aucune donnée trouvée.</td></tr>
+              <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400">Aucune donnée trouvée.</td></tr>
             ) : (
               attendanceData.map((item) => {
                 const taux = item.total > 0 ? ((item.presents / item.total) * 100).toFixed(0) : '0';
@@ -150,12 +129,6 @@ export function PresencesView() {
                       <span className="flex items-center gap-1.5 text-red-600 font-medium">
                         <XCircle className="w-4 h-4" />
                         {item.absents}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="flex items-center gap-1.5 text-amber-600 font-medium">
-                        <Clock className="w-4 h-4" />
-                        {item.retards}
                       </span>
                     </td>
                     <td className="px-6 py-4">

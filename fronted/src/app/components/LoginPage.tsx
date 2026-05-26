@@ -33,6 +33,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         body: JSON.stringify({ username, password }),
       });
 
+      if (modernRes.status === 403) {
+        const errData = await modernRes.json();
+        setError(errData.message || 'Ce compte est désactivé.');
+        return;
+      }
+
       if (modernRes.ok) {
         const payload = await modernRes.json();
         const userRole = (payload?.user?.role ?? '').toString().toUpperCase();
@@ -67,6 +73,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         },
         body: JSON.stringify({ username, password }),
       });
+
+      if (legacyTeacherRes.status === 403) {
+        const errData = await legacyTeacherRes.json();
+        setError(errData.message || 'Ce compte est désactivé.');
+        return;
+      }
 
       if (legacyTeacherRes.ok) {
         const payload = await legacyTeacherRes.json();

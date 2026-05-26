@@ -13,6 +13,7 @@ export function SallesView() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ libelle: '', position: '', idClasse: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [assignLoading, setAssignLoading] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => { fetchAll(); }, []);
@@ -43,7 +44,7 @@ export function SallesView() {
         body: JSON.stringify({
           libelle: form.libelle,
           position: form.position || 'NON DEFINI',
-          idClasse: parseInt(form.idClasse) || 1,
+          idClasse: form.idClasse ? parseInt(form.idClasse) : null,
         }),
       });
       setShowModal(false);
@@ -59,8 +60,23 @@ export function SallesView() {
   const handleToggleActif = async (idSalle: number) => {
     try {
       await legacyFetch(`${API}/salles/${idSalle}/toggle`, { method: 'PATCH' });
-      setSalles(prev => prev.map(s => s.idSalle === idSalle ? { ...s, actif: s.actif === 1 ? 0 : 1 } : s));
+      fetchAll(); // Refresh completely to get updated classes assignments
     } catch (e: any) { alert(e.message || 'Erreur lors du changement de statut'); }
+  };
+
+  const handleAssignClass = async (idSalle: number, idClasse: string) => {
+    setAssignLoading(idSalle);
+    try {
+      await legacyFetch(`${API}/salles/${idSalle}/assign-class`, {
+        method: 'PATCH',
+        body: JSON.stringify({ idClasse: idClasse ? parseInt(idClasse) : null })
+      });
+      fetchAll(); // Refresh to update all rooms in case a class was stolen from another room
+    } catch (e: any) {
+      alert(e.message || "Erreur d'assignation");
+    } finally {
+      setAssignLoading(null);
+    }
   };
 
   const filtered = salles.filter(s =>
@@ -129,9 +145,28 @@ export function SallesView() {
                 <td className="px-5 py-3 text-slate-400 text-xs">{s.idSalle}</td>
                 <td className="px-5 py-3 text-slate-900" style={{ fontWeight: 600 }}>{s.libelle}</td>
                 <td className="px-5 py-3">
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs" style={{ fontWeight: 600 }}>
-                    {s.classeLibelle}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {assignLoading === s.idSalle ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    ) : s.actif === 1 ? (
+                      <select 
+                        value={s.idClasse || ''} 
+                        onChange={(e) => handleAssignClass(s.idSalle, e.target.value)}
+                        className={`text-xs font-semibold px-2 py-1 rounded-md border outline-none cursor-pointer transition-colors ${s.idClasse ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                      >
+                        <option value="">-- Non assignée --</option>
+                        {classes.map((c: any) => (
+                          <option key={c.idClasse} value={c.idClasse}>
+                            {c.libelle}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-slate-50 text-slate-500 border border-slate-200 rounded-lg text-xs" style={{ fontWeight: 600 }}>
+                        Non assignée
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-3 text-slate-500 text-xs">{s.position}</td>
                 <td className="px-5 py-3">
@@ -169,9 +204,9 @@ export function SallesView() {
                 <input value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} placeholder="Ex: Bâtiment A, Rez-de-chaussée…" className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Classe assignée</label>
+                <label className="block text-xs text-slate-600 mb-1.5" style={{ fontWeight: 600 }}>Classe assignée <span className="text-slate-400 font-normal">(optionnel)</span></label>
                 <select value={form.idClasse} onChange={e => setForm({ ...form, idClasse: e.target.value })} className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
-                  <option value="">-- Sélectionner --</option>
+                  <option value="">-- Aucune (sera assignée plus tard) --</option>
                   {classes.map((c: any) => <option key={c.idClasse} value={c.idClasse}>{c.libelle}</option>)}
                 </select>
               </div>

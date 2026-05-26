@@ -1,93 +1,71 @@
-import { BookOpen, CreditCard, FileText, TrendingUp, Bell, MessageSquare, Calendar, AlertCircle, CheckCircle, Clock, AlertTriangle, Users, GraduationCap } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { BookOpen, CreditCard, FileText, TrendingUp, Bell, MessageSquare, Calendar, AlertCircle, CheckCircle, Clock, AlertTriangle, Users, GraduationCap, Loader2 } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-// Données simulées pour un parent d'école primaire
-const children = [
-  {
-    id: "1",
-    name: "Lucas Dupont",
-    class: "CM2 - Classe de Mme Martin",
-    average: 15.5,
-    rank: 3,
-    totalStudents: 28,
-    status: "excellent" as const,
-  },
-  {
-    id: "2",
-    name: "Emma Dupont",
-    class: "CE1 - Classe de M. Bernard",
-    average: 14.2,
-    rank: 7,
-    totalStudents: 25,
-    status: "good" as const,
-  },
-]
-
-const payments = [
-  { id: "1", label: "Frais de scolarité - 2ème trimestre", amount: 75000, dueDate: "15 Jan 2026", status: "pending" as const },
-  { id: "2", label: "Cantine - Janvier", amount: 25000, dueDate: "05 Jan 2026", status: "overdue" as const },
-  { id: "3", label: "Fournitures scolaires", amount: 15000, dueDate: "01 Dec 2025", status: "paid" as const },
-]
-
-const messages = [
-  {
-    id: "1",
-    sender: { name: "Mme Martin", role: "Enseignante CM2" },
-    subject: "Sortie scolaire au musée",
-    preview: "Nous organisons une sortie au musée des sciences le 20 janvier...",
-    date: "Aujourd&apos;hui",
-    unread: true,
-  },
-  {
-    id: "2",
-    sender: { name: "Direction", role: "Administration" },
-    subject: "Réunion parents-professeurs",
-    preview: "La réunion du 2ème trimestre aura lieu le samedi 18 janvier...",
-    date: "Hier",
-    unread: true,
-  },
-  {
-    id: "3",
-    sender: { name: "M. Bernard", role: "Enseignant CE1" },
-    subject: "Devoirs de vacances",
-    preview: "Voici les exercices à faire pendant les vacances...",
-    date: "12 Jan",
-    unread: false,
-  },
-]
-
-const events = [
-  { id: "1", title: "Composition - Mathématiques", date: "18 Jan 2026", time: "08:00", type: "exam" as const },
-  { id: "2", title: "Réunion parents-professeurs", date: "18 Jan 2026", time: "14:00", location: "Salle polyvalente", type: "meeting" as const },
-  { id: "3", title: "Fête de l'école", date: "25 Jan 2026", time: "10:00", location: "Cour de l'école", type: "event" as const },
-  { id: "4", title: "Vacances de février", date: "15 Fév 2026", time: "Toute la journée", type: "holiday" as const },
-]
-
-const statusConfig = {
+const statusConfig: Record<string, { label: string, className: string }> = {
   excellent: { label: "Excellent", className: "bg-emerald-100 text-emerald-700" },
   good: { label: "Bien", className: "bg-amber-100 text-amber-700" },
   "needs-attention": { label: "À surveiller", className: "bg-red-100 text-red-700" },
 }
 
-const paymentStatusConfig = {
+const paymentStatusConfig: Record<string, { icon: any, label: string, className: string, iconClass: string }> = {
   paid: { icon: CheckCircle, label: "Payé", className: "bg-emerald-100 text-emerald-700", iconClass: "text-emerald-500" },
   pending: { icon: Clock, label: "En attente", className: "bg-amber-100 text-amber-700", iconClass: "text-amber-500" },
   overdue: { icon: AlertTriangle, label: "En retard", className: "bg-red-100 text-red-700", iconClass: "text-red-500" },
 }
 
-const eventTypeConfig = {
+const eventTypeConfig: Record<string, { icon: any, className: string }> = {
   exam: { icon: FileText, className: "bg-red-100 text-red-600" },
   meeting: { icon: Users, className: "bg-blue-100 text-blue-600" },
   event: { icon: GraduationCap, className: "bg-amber-100 text-amber-600" },
   holiday: { icon: Calendar, className: "bg-emerald-100 text-emerald-600" },
 }
 
-export default function ParentDashboard() {
-  const totalDue = payments.filter(p => p.status !== "paid").reduce((sum, p) => sum + p.amount, 0)
-  const unreadMessages = messages.filter(m => m.unread).length
+function ParentDashboardContent() {
+  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    let userId = searchParams.get('userId');
+    if (!userId && typeof window !== 'undefined') {
+      userId = localStorage.getItem('user_id');
+    }
+    
+    if (userId) {
+      if (typeof window !== 'undefined') localStorage.setItem('user_id', userId);
+      fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard`)
+        .then(res => res.json())
+        .then(resData => {
+          setData(resData);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [searchParams]);
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>;
+  }
+
+  if (!data) {
+    return <div className="flex h-screen items-center justify-center bg-slate-50">Aucune donnée disponible.</div>;
+  }
+
+  const { children = [], payments = [], messages = [], events = [], parent } = data;
+  const totalDue = payments.filter((p: any) => p.status !== "paid").reduce((sum: number, p: any) => sum + p.amount, 0)
+  const unreadMessages = messages.filter((m: any) => m.unread).length
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -95,13 +73,13 @@ export default function ParentDashboard() {
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Tableau de bord</h1>
-          <p className="text-sm text-slate-500">Bienvenue, Marie Dupont</p>
+          <p className="text-sm text-slate-500">Bienvenue, {parent ? `${parent.prenom} ${parent.nom}` : 'Parent'}</p>
         </div>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="relative text-slate-600 hover:text-amber-600 hover:bg-amber-50">
             <Bell className="h-5 w-5" />
             <span className="absolute -right-1 -top-1 h-5 w-5 rounded-full bg-amber-500 text-xs text-white flex items-center justify-center">
-              3
+              {unreadMessages}
             </span>
           </Button>
         </div>
