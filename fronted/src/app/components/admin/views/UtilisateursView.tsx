@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Shield, UserCheck, Users, UserPlus, X, Loader2, Eye, EyeOff, ToggleLeft, ToggleRight, BookOpen } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Shield, UserCheck, Users, UserPlus, X, Loader2, Eye, EyeOff, Search } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
 const API = 'http://localhost:8000/api/legacy';
@@ -18,7 +18,12 @@ export function UtilisateursView() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', matricule: '' });
+  const [form, setForm] = useState({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
+  // Matircules sélectionnés (multi)
+  const [selectedMatricules, setSelectedMatricules] = useState<number[]>([]);
+  // Résultat de la recherche par nom de parent
+  const [parentSearchResult, setParentSearchResult] = useState<{ eleves: any[], parent: any | null } | null>(null);
+  const [searchingParent, setSearchingParent] = useState(false);
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -28,7 +33,7 @@ export function UtilisateursView() {
       const [u, c, el] = await Promise.all([
         legacyFetch<any>(`${API}/utilisateurs`),
         legacyFetch<any>(`${API}/cours`),
-        legacyFetch<any>(`${API}/eleves`),
+        legacyFetch<any>(`${API}/eleves?no_parent_account=1`),
       ]);
       setData(u);
       setCours(c.data || []);
@@ -36,6 +41,30 @@ export function UtilisateursView() {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
+
+  // Recherche d'élèves par nom de parent (debounced)
+  const searchParentByName = useCallback(async (nom: string) => {
+    if (modalType !== 'parent' || nom.length < 3) { setParentSearchResult(null); return; }
+    setSearchingParent(true);
+    try {
+      const res: any = await legacyFetch(`${API}/eleves/by-parent-name?nom=${encodeURIComponent(nom)}`);
+      setParentSearchResult(res);
+      if (res.parent) {
+        setForm(prev => ({ ...prev, idPers: String(res.parent.idPers) }));
+      }
+      // Pré-sélectionner tous les élèves détectés
+      if (res.eleves && res.eleves.length > 0) {
+        setSelectedMatricules(res.eleves.map((el: any) => el.matricule));
+      }
+    } catch { setParentSearchResult(null); }
+    finally { setSearchingParent(false); }
+  }, [modalType]);
+
+  useEffect(() => {
+    if (modalType !== 'parent' || form.nom.length < 3) return;
+    const t = setTimeout(() => searchParentByName(form.nom), 500);
+    return () => clearTimeout(t);
+  }, [form.nom, modalType, searchParentByName]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +74,13 @@ export function UtilisateursView() {
       const endpoint = modalType === 'enseignant' ? 'enseignant' : 'parent';
       const payload = modalType === 'enseignant'
         ? { nom: form.nom, prenom: form.prenom, mobile: form.mobile, email: form.email, username: form.username, password: form.password, idCours: parseInt(form.idCours) || undefined }
-        : { nom: form.nom, prenom: form.prenom, mobile: form.mobile, email: form.email, username: form.username, password: form.password, matricule: parseInt(form.matricule) || undefined };
+        : { nom: form.nom, prenom: form.prenom, mobile: form.mobile, email: form.email, username: form.username, password: form.password, matricules: selectedMatricules.length > 0 ? selectedMatricules : undefined, idPers: parseInt(form.idPers) || undefined };
 
       const res: any = await legacyFetch(`${API}/utilisateurs/${endpoint}`, { method: 'POST', body: JSON.stringify(payload) });
       setSuccess(res.message || 'Compte créé avec succès !');
-      setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', matricule: '' });
+      setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
+      setSelectedMatricules([]);
+      setParentSearchResult(null);
       fetchAll();
       setTimeout(() => { setModalType(null); setSuccess(''); }, 2500);
     } catch (e: any) { setError(e.message || 'Erreur'); }
@@ -58,7 +89,9 @@ export function UtilisateursView() {
 
   const openModal = (type: ModalType) => {
     setModalType(type); setError(''); setSuccess('');
-    setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', matricule: '' });
+    setParentSearchResult(null);
+    setSelectedMatricules([]);
+    setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
   };
 
   const handleToggle = async (id: number, source: string) => {
@@ -189,13 +222,13 @@ export function UtilisateursView() {
         {tab === 'parents' && (
           <table className="w-full text-sm">
             <thead><tr className="border-b border-slate-100 bg-slate-50">
-              {['Parent', 'Username', 'Mobile', 'Email', 'Élève lié'].map(h => (
+              {['Parent', 'Username', 'Mobile', 'Email', 'Élève lié', 'Statut'].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-slate-500 text-xs uppercase tracking-wide font-semibold">{h}</th>
               ))}
             </tr></thead>
             <tbody className="divide-y divide-slate-50">
               {data.parents.length === 0 && (
-                <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-sm">Aucun parent enregistré.</td></tr>
+                <tr><td colSpan={6} className="text-center py-8 text-slate-400 text-sm">Aucun parent enregistré.</td></tr>
               )}
               {data.parents.map((p: any) => (
                 <tr key={p.id} className="hover:bg-slate-50">
@@ -214,6 +247,14 @@ export function UtilisateursView() {
                     {p.eleveNom ? (
                       <span className="text-xs text-slate-600 font-semibold">{p.eleveNom} {p.elevePrenom}</span>
                     ) : <span className="text-slate-300 text-xs">—</span>}
+                  </td>
+                  <td className="px-5 py-3">
+                    <button
+                      onClick={() => handleToggle(p.id, 'parent')}
+                      className={`px-2 py-0.5 rounded text-xs font-semibold ${p.actif ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
+                    >
+                      {p.actif ? 'Actif' : 'Inactif'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -239,16 +280,20 @@ export function UtilisateursView() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Nom *</label>
-                <input required value={form.nom} onChange={e => {
-                  const val = e.target.value;
-                  setForm({...form, nom: val});
-                  if (modalType === 'parent' && val.length > 2) {
-                    const match = data.parents.find((p: any) => p.nom.toLowerCase().includes(val.toLowerCase()));
-                    if (match && match.matricule) {
-                      setForm(prev => ({...prev, nom: val, prenom: prev.prenom || match.prenom, matricule: String(match.matricule)}));
-                    }
-                  }
-                }} placeholder="DUPONT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                <div className="relative">
+                  <input required value={form.nom} onChange={e => setForm({...form, nom: e.target.value, idPers: ''})} placeholder="DUPONT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                  {searchingParent && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />}
+                  {!searchingParent && modalType === 'parent' && <Search className="w-3.5 h-3.5 text-slate-300 absolute right-3 top-1/2 -translate-y-1/2" />}
+                </div>
+                {/* Indicateur si un parent existant est trouvé */}
+                {parentSearchResult?.parent && (
+                  <p className="text-xs text-emerald-600 mt-1 font-semibold">
+                    ✓ Parent trouvé : {parentSearchResult.parent.prenom} {parentSearchResult.parent.nom} — compte sera lié
+                  </p>
+                )}
+                {parentSearchResult && !parentSearchResult.parent && form.nom.length >= 3 && (
+                  <p className="text-xs text-slate-400 mt-1">Aucun parent existant avec ce nom — nouveau compte créé</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Prénom *</label>
@@ -293,13 +338,61 @@ export function UtilisateursView() {
 
             {modalType === 'parent' && (
               <div>
-                <label className="block text-xs text-slate-600 mb-1 font-semibold">Élève lié (matricule)</label>
-                <select value={form.matricule} onChange={e => setForm({...form, matricule: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
-                  <option value="">-- Sélectionner l'élève --</option>
-                  {eleves.map((el: any) => (
-                    <option key={el.matricule} value={el.matricule}>{el.nom} {el.prenom} (mat. {el.matricule})</option>
-                  ))}
-                </select>
+                <label className="block text-xs text-slate-600 mb-1 font-semibold">
+                  Élèves liés
+                  {selectedMatricules.length > 0 && (
+                    <span className="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-bold">{selectedMatricules.length} sélectionné{selectedMatricules.length > 1 ? 's' : ''}</span>
+                  )}
+                </label>
+                {/* Afficher uniquement les élèves détectés par l'API (liés au nom du parent saisi) */}
+                <div className="border border-slate-200 rounded-lg overflow-y-auto max-h-40 bg-slate-50">
+                  {(() => {
+                    let list = eleves;
+                    
+                    // Filtrage strict : si on a tapé un nom (>= 3 chars), 
+                    // on n'affiche QUE les élèves renvoyés par l'API (inscrits avec ce nom de parent)
+                    if (form.nom.trim().length >= 3) {
+                      list = parentSearchResult?.eleves || [];
+                    }
+
+                    if (list.length === 0) {
+                      return <div className="p-4 text-center text-sm text-slate-500">
+                        {form.nom.trim().length >= 3 
+                          ? `Aucun élève inscrit avec le nom de parent "${form.nom}".`
+                          : "Aucun élève."}
+                      </div>;
+                    }
+
+                    return list.map((el: any) => {
+                      const detected = parentSearchResult?.eleves?.some((pe: any) => pe.matricule === el.matricule);
+                      const checked  = selectedMatricules.includes(el.matricule);
+                      return (
+                        <label
+                          key={el.matricule}
+                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-white transition-colors border-b border-slate-100 last:border-0 ${
+                            detected ? 'bg-blue-50/60' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => setSelectedMatricules(prev =>
+                              checked ? prev.filter(m => m !== el.matricule) : [...prev, el.matricule]
+                            )}
+                            className="w-4 h-4 accent-blue-600"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-800">{el.nom} {el.prenom}</p>
+                            <p className="text-xs text-slate-400">Matricule {el.matricule}{detected ? ' — ⭐ déjà lié' : ''}</p>
+                          </div>
+                          {checked && <span className="text-xs text-blue-600 font-bold">✓</span>}
+                        </label>
+                      );
+                    });
+                  })()}
+                </div>                {selectedMatricules.length === 0 && (
+                  <p className="text-xs text-amber-500 mt-1">Optionnel — vous pouvez créer le compte sans lier d'élève maintenant</p>
+                )}
               </div>
             )}
 

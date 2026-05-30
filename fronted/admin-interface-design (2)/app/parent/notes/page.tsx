@@ -1,186 +1,137 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { ParentHeader } from "@/components/parent/parent-header"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { BookOpen, TrendingUp, TrendingDown, Loader2, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-const children = [
-  { id: "1", name: "Lucas Dupont", class: "CM2", initials: "LD" },
-  { id: "2", name: "Emma Dupont", class: "CE1", initials: "ED" },
-]
+const API = 'http://localhost:8000/api/legacy';
 
-const notesData: Record<string, { subject: string; notes: { label: string; value: number; max: number; date: string; teacher: string }[]; average: number; classAverage: number }[]> = {
-  "1": [
-    {
-      subject: "Mathématiques",
-      notes: [
-        { label: "Contrôle - Fractions", value: 16, max: 20, date: "10 Jan 2026", teacher: "Mme Martin" },
-        { label: "Devoir - Géométrie", value: 14, max: 20, date: "05 Jan 2026", teacher: "Mme Martin" },
-        { label: "Interrogation - Calcul mental", value: 18, max: 20, date: "18 Déc 2025", teacher: "Mme Martin" },
-      ],
-      average: 16,
-      classAverage: 13.5,
-    },
-    {
-      subject: "Français",
-      notes: [
-        { label: "Dictée", value: 15, max: 20, date: "08 Jan 2026", teacher: "Mme Martin" },
-        { label: "Rédaction", value: 14, max: 20, date: "20 Déc 2025", teacher: "Mme Martin" },
-        { label: "Grammaire", value: 16, max: 20, date: "15 Déc 2025", teacher: "Mme Martin" },
-      ],
-      average: 15,
-      classAverage: 12.8,
-    },
-    {
-      subject: "Histoire-Géographie",
-      notes: [
-        { label: "Évaluation - La Révolution", value: 17, max: 20, date: "12 Jan 2026", teacher: "Mme Martin" },
-        { label: "Exposé - Les régions", value: 15, max: 20, date: "05 Déc 2025", teacher: "Mme Martin" },
-      ],
-      average: 16,
-      classAverage: 14.2,
-    },
-    {
-      subject: "Sciences",
-      notes: [
-        { label: "Expérience - États de l'eau", value: 18, max: 20, date: "09 Jan 2026", teacher: "Mme Martin" },
-        { label: "Contrôle - Le corps humain", value: 14, max: 20, date: "12 Déc 2025", teacher: "Mme Martin" },
-      ],
-      average: 16,
-      classAverage: 13.8,
-    },
-  ],
-  "2": [
-    {
-      subject: "Lecture",
-      notes: [
-        { label: "Lecture à voix haute", value: 15, max: 20, date: "10 Jan 2026", teacher: "M. Bernard" },
-        { label: "Compréhension de texte", value: 14, max: 20, date: "03 Jan 2026", teacher: "M. Bernard" },
-      ],
-      average: 14.5,
-      classAverage: 13,
-    },
-    {
-      subject: "Écriture",
-      notes: [
-        { label: "Copie", value: 16, max: 20, date: "08 Jan 2026", teacher: "M. Bernard" },
-        { label: "Production écrite", value: 13, max: 20, date: "18 Déc 2025", teacher: "M. Bernard" },
-      ],
-      average: 14.5,
-      classAverage: 12.5,
-    },
-    {
-      subject: "Mathématiques",
-      notes: [
-        { label: "Addition et soustraction", value: 14, max: 20, date: "09 Jan 2026", teacher: "M. Bernard" },
-        { label: "Problèmes", value: 12, max: 20, date: "20 Déc 2025", teacher: "M. Bernard" },
-      ],
-      average: 13,
-      classAverage: 12,
-    },
-  ],
+function getColor(note: number) {
+  if (note >= 16) return 'bg-emerald-100 text-emerald-700';
+  if (note >= 12) return 'bg-amber-100 text-amber-700';
+  if (note >= 8)  return 'bg-orange-100 text-orange-700';
+  return 'bg-red-100 text-red-700';
+}
+
+function NotesContent() {
+  const searchParams = useSearchParams();
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedChild, setSelectedChild] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlId = searchParams.get('userId');
+    if (urlId) localStorage.setItem('parent_user_id', urlId);
+    const userId = urlId || localStorage.getItem('parent_user_id');
+    if (!userId) { setLoading(false); return; }
+
+    fetch(`${API}/parent/${userId}/notes`)
+      .then(r => r.json())
+      .then(res => {
+        setData(res.data || []);
+        if (res.data?.length > 0) setSelectedChild(res.data[0].child.id);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [searchParams]);
+
+  if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>;
+
+  const currentChild = data.find(d => d.child.id === selectedChild);
+
+  if (!data.length) return (
+    <div className="p-6 flex flex-col items-center justify-center h-64 gap-3 text-slate-500">
+      <AlertCircle className="w-10 h-10 text-amber-300" />
+      <p className="font-medium">Aucune note disponible pour le moment</p>
+    </div>
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Notes & Évaluations</h1>
+        <p className="text-slate-500 text-sm mt-1">Résultats scolaires de vos enfants</p>
+      </div>
+
+      {/* Sélecteur d'enfant */}
+      {data.length > 1 && (
+        <div className="flex gap-3">
+          {data.map(d => (
+            <button
+              key={d.child.id}
+              onClick={() => setSelectedChild(d.child.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                selectedChild === d.child.id
+                  ? 'bg-amber-500 text-white border-amber-500 shadow'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-amber-300'
+              }`}
+            >
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-xs bg-amber-100 text-amber-700">
+                  {d.child.nom?.[0]}{d.child.prenom?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              {d.child.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Notes par matière */}
+      {currentChild && (
+        <div className="space-y-4">
+          {currentChild.subjects.length === 0 ? (
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400">
+              Aucune note enregistrée pour {currentChild.child.name}
+            </div>
+          ) : (
+            currentChild.subjects.map((sub: any, i: number) => (
+              <div key={i} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-3 bg-slate-50 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100">
+                      <BookOpen className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{sub.subject}</p>
+                      <p className="text-xs text-slate-500">Coeff. {sub.coefficient}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-slate-500">Moyenne</p>
+                    <p className={`text-lg font-bold px-2 py-0.5 rounded-lg inline-block ${getColor(sub.average)}`}>
+                      {sub.average}/20
+                    </p>
+                  </div>
+                </div>
+                <div className="divide-y divide-slate-50">
+                  {sub.notes.map((n: any, j: number) => (
+                    <div key={j} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{n.label}</p>
+                        <p className="text-xs text-slate-400">{n.date} — {n.teacher}</p>
+                      </div>
+                      <Badge className={getColor(n.value)}>
+                        {n.value}/{n.max}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function NotesPage() {
-  const [selectedChild, setSelectedChild] = useState(children[0].id)
-  const notes = notesData[selectedChild] || []
-
-  const getGradeColor = (value: number, max: number) => {
-    const percentage = (value / max) * 100
-    if (percentage >= 80) return "text-emerald-600 bg-emerald-50"
-    if (percentage >= 60) return "text-amber-600 bg-amber-50"
-    return "text-red-600 bg-red-50"
-  }
-
   return (
-    <div className="min-h-screen">
-      <ParentHeader 
-        title="Notes et évaluations" 
-        subtitle="Suivez les résultats scolaires de vos enfants" 
-      />
-
-      <div className="p-6">
-        {/* Sélection de l'enfant */}
-        <div className="flex gap-3 mb-6">
-          {children.map((child) => (
-            <Button
-              key={child.id}
-              variant={selectedChild === child.id ? "default" : "outline"}
-              onClick={() => setSelectedChild(child.id)}
-              className={cn(
-                "flex items-center gap-2",
-                selectedChild === child.id 
-                  ? "bg-amber-500 hover:bg-amber-600 text-white" 
-                  : "border-amber-200 text-amber-700 hover:bg-amber-50"
-              )}
-            >
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className={cn(
-                  "text-xs",
-                  selectedChild === child.id 
-                    ? "bg-amber-600 text-white" 
-                    : "bg-amber-100 text-amber-700"
-                )}>
-                  {child.initials}
-                </AvatarFallback>
-              </Avatar>
-              {child.name}
-              <Badge variant="outline" className={cn(
-                "text-xs",
-                selectedChild === child.id 
-                  ? "border-amber-300 text-amber-100" 
-                  : "border-slate-200"
-              )}>
-                {child.class}
-              </Badge>
-            </Button>
-          ))}
-        </div>
-
-        {/* Notes par matière */}
-        <div className="space-y-6">
-          {notes.map((subject) => (
-            <div 
-              key={subject.subject}
-              className="rounded-xl border border-slate-200 bg-white overflow-hidden"
-            >
-              <div className="flex items-center justify-between p-5 bg-slate-50 border-b border-slate-100">
-                <h3 className="font-semibold text-slate-900">{subject.subject}</h3>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm text-slate-500">Moyenne élève</p>
-                    <p className="text-lg font-bold text-amber-600">{subject.average}/20</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-500">Moyenne classe</p>
-                    <p className="text-lg font-semibold text-slate-600">{subject.classAverage}/20</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="divide-y divide-slate-100">
-                {subject.notes.map((note, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">{note.label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{note.teacher} - {note.date}</p>
-                    </div>
-                    <div className={cn(
-                      "px-4 py-2 rounded-lg font-bold",
-                      getGradeColor(note.value, note.max)
-                    )}>
-                      {note.value}/{note.max}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>}>
+      <NotesContent />
+    </Suspense>
+  );
 }

@@ -39,7 +39,7 @@ export function ElevesView() {
 
   const getCompatibleSalles = (currentClass: string) => {
     // Only rooms that are active AND have a real class assigned (not null)
-    const assignedRooms = sallesList.filter((s: any) => s.actif === 1 && s.idClasse);
+    const assignedRooms = sallesList.filter((s: any) => s.actif === 1 && s.idClasse && s.idClasse !== 999);
     if (!currentClass || currentClass === 'Non assigné' || currentClass === 'Non assignée') {
       return assignedRooms; // show all available rooms when no class yet
     }

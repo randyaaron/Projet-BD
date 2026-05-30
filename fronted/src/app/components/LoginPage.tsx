@@ -95,7 +95,38 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         return;
       }
 
-      // 3. Tentative API Legacy (Admin)
+      // 3. Tentative API Legacy (Parent)
+      const legacyParentRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/auth/login-parent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (legacyParentRes.status === 403) {
+        const errData = await legacyParentRes.json();
+        setError(errData.message || 'Ce compte est désactivé.');
+        return;
+      }
+
+      if (legacyParentRes.ok) {
+        const payload = await legacyParentRes.json();
+        if (payload?.parent?.id) {
+          localStorage.setItem('user_id', String(payload.parent.id));
+        }
+        if (payload?.token) {
+          localStorage.setItem('legacy_token', String(payload.token));
+        }
+        localStorage.setItem('user_role', 'PARENT');
+
+        onLogin('parent');
+        setLoading(false);
+        return;
+      }
+
+      // 4. Tentative API Legacy (Admin)
       const legacyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/auth/login-admin`, {
         method: 'POST',
         headers: {

@@ -115,8 +115,59 @@ class LegacyAuthController extends Controller
         ]);
     }
 
+    /** Connexion parent — authentifié via la table Personne (typePersonne = 3) */
+    public function loginParent(Request $request)
+    {
+        $data = $request->validate([
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
+        ]);
 
+        $personne = DB::table('Personne')
+            ->where('typePersonne', 3)
+            ->where('isDelete', 0)
+            ->where('username', $data['username'])
+            ->whereNotNull('username')
+            ->where('username', '!=', '')
+            ->first();
 
+        if (!$personne) {
+            return response()->json(['message' => 'Compte parent introuvable.'], 404);
+        }
+
+        $plainMatch = (string) $personne->password === $data['password'];
+        $isHash     = str_starts_with((string) $personne->password, '$2');
+        $hashMatch  = $isHash && Hash::check($data['password'], (string) $personne->password);
+
+        if (!$plainMatch && !$hashMatch) {
+            return response()->json(['message' => 'Mot de passe incorrect.'], 422);
+        }
+
+        // Vérifier que le parent a au moins un élève actif
+        $hasActiveChild = DB::table('Parents')
+            ->join('Eleve', 'Parents.matricule', '=', 'Eleve.matricule')
+            ->where('Parents.idPers', $personne->idPers)
+            ->where('Eleve.actif', 1)
+            ->where('Eleve.isDelete', 0)
+            ->exists();
+
+        if (!$hasActiveChild) {
+            return response()->json(['message' => 'Ce compte est bloqué car aucun de vos enfants n\'est actif dans le système.'], 403);
+        }
+
+        return response()->json([
+            'message' => 'Connexion parent OK',
+            'token'   => Str::random(40),
+            'parent'  => [
+                'id'       => $personne->idPers,
+                'nom'      => $personne->nom,
+                'prenom'   => $personne->prenom,
+                'username' => $personne->username,
+                'email'    => $personne->email,
+                'mobile'   => $personne->mobile,
+            ],
+        ]);
+    }
 
 
 

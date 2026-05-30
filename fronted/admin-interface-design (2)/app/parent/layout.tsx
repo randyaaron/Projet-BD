@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
   BookOpen,
   ChevronLeft,
@@ -27,14 +27,38 @@ const navigation = [
   { name: "Messages", href: "/parent/messages", icon: MessageSquare },
 ]
 
-export default function ParentLayout({
+export function ParentLayoutInner({
   children,
 }: {
   children: React.ReactNode
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [parentName, setParentName] = useState("Parent")
+  const [parentInitials, setParentInitials] = useState("P")
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Sauvegarder userId depuis l'URL dans localStorage (port 3002)
+    const urlUserId = searchParams.get("userId")
+    if (urlUserId) {
+      localStorage.setItem("parent_user_id", urlUserId)
+    }
+    const userId = urlUserId || localStorage.getItem("parent_user_id")
+    if (!userId) return
+
+    fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard`)
+      .then(r => r.json())
+      .then(data => {
+        if (data?.parent) {
+          const name = `${data.parent.prenom} ${data.parent.nom}`
+          setParentName(name)
+          setParentInitials(`${data.parent.prenom?.[0] || ''}${data.parent.nom?.[0] || ''}`)
+        }
+      })
+      .catch(() => {})
+  }, [searchParams])
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -124,16 +148,16 @@ export default function ParentLayout({
             collapsed && "justify-center"
           )}>
             <Avatar className="h-10 w-10 border-2 border-amber-500 shrink-0">
-              <AvatarFallback className="bg-amber-500 text-white">MD</AvatarFallback>
+              <AvatarFallback className="bg-amber-500 text-white">{parentInitials}</AvatarFallback>
             </Avatar>
             {!collapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">Marie Dupont</p>
+                  <p className="text-sm font-medium text-white truncate">{parentName}</p>
                   <p className="text-xs text-amber-200 truncate">Parent</p>
                 </div>
                 <button
-                  onClick={() => window.location.href = 'http://localhost:5173'}
+                  onClick={() => { localStorage.removeItem('parent_user_id'); window.location.href = 'http://localhost:5173'; }}
                   className="p-2 text-amber-200 hover:text-white hover:bg-amber-800 rounded-lg transition-colors"
                   title="Déconnexion"
                 >
@@ -177,4 +201,14 @@ export default function ParentLayout({
       </div>
     </div>
   )
+}
+
+import { Suspense } from 'react';
+
+export default function ParentLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+      <ParentLayoutInner>{children}</ParentLayoutInner>
+    </Suspense>
+  );
 }

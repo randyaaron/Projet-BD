@@ -17,6 +17,18 @@ class LegacyStudentController extends Controller
             ->where('Eleve.isDelete', 0)
             ->select('Eleve.*', 'Classe.libelle as classe', 'Classe.idClasse', 'Salle.idSalle');
 
+        if ($request->input('no_parent_account') == '1') {
+            // Exclure les élèves qui sont liés à un parent ayant déjà un VRAI compte
+            $query->whereNotExists(function($q) {
+                $q->select(DB::raw(1))
+                  ->from('Parents')
+                  ->join('Personne', 'Parents.idPers', '=', 'Personne.idPers')
+                  ->whereColumn('Parents.matricule', 'Eleve.matricule')
+                  ->where('Personne.username', '!=', '')
+                  ->where('Personne.username', 'not like', 'P%');
+            });
+        }
+
         if ($request->filled('q')) {
             $q = (string) $request->input('q');
             $query->where(function ($b) use ($q) {
@@ -70,19 +82,35 @@ class LegacyStudentController extends Controller
         ]);
 
         if (!empty($data['parentNom'])) {
-            $idPers = DB::table('Personne')->insertGetId([
-                'nom' => strtoupper($data['parentNom']),
-                'prenom' => '',
-                'dateNaissance' => '1970-01-01',
-                'typePersonne' => 3,
-                'username' => 'P' . $data['matricule'],
-                'password' => bcrypt('123456'),
-                'idAdmin' => 1,
-            ]);
+            $nomUp = strtoupper(trim($data['parentNom']));
+            $existing = DB::table('Personne')->where('typePersonne', 3)->where('nom', $nomUp)->first();
+            
+            if ($existing) {
+                $idPers = $existing->idPers;
+            } else {
+                $idPers = (DB::table('Personne')->max('idPers') ?? 0) + 1;
+                DB::table('Personne')->insert([
+                    'idPers' => $idPers,
+                    'nom' => $nomUp,
+                    'prenom' => '',
+                    'dateNaissance' => '1970-01-01',
+                    'lieuNaissance' => 'INDEFINI',
+                    'typePersonne' => 3,
+                    'mobile' => '0',
+                    'phone' => '0',
+                    'username' => '',
+                    'password' => '',
+                    'idAdmin' => 1,
+                ]);
+            }
+
+            $idParent = (DB::table('Parents')->max('idParent') ?? 0) + 1;
             DB::table('Parents')->insert([
+                'idParent' => $idParent,
                 'idPers' => $idPers,
                 'matricule' => $data['matricule'],
                 'idAdmin' => 1,
+                'isDelete' => 0,
             ]);
         }
 
@@ -142,6 +170,7 @@ class LegacyStudentController extends Controller
         $salle = DB::table('Salle')->where('idSalle', $idSalle)->first();
         if (!$salle) return response()->json(['message' => 'Salle introuvable'], 404);
         if (!$salle->actif) return response()->json(['message' => 'Impossible d\'affecter à une salle inactive'], 403);
+        if ($salle->idClasse == 999) return response()->json(['message' => 'Impossible d\'affecter à une salle qui n\'a pas de classe'], 403);
 
         $exists = DB::table('Frequente')->where('matricule', $matricule)->first();
         if ($exists) {

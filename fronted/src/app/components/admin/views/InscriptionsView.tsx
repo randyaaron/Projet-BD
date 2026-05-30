@@ -76,6 +76,7 @@ export function InscriptionsView() {
           dateNaissance: form.dateNaissance,
           lieuNaissance: form.lieuNaissance,
           sexe: parseInt(form.sexe),
+          parentNom: form.parentNom, // <- Added this line
         }),
       });
 

@@ -39,6 +39,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::prefix('legacy')->group(function () {
     Route::post('/auth/login-admin', [LegacyAuthController::class, 'loginAdmin']);
     Route::post('/auth/login-teacher', [LegacyAuthController::class, 'loginTeacher']);
+    Route::post('/auth/login-parent', [LegacyAuthController::class, 'loginParent']);
 
 
     // Lecture globale: super admin, admin, directeur, secretaire, fondateur
@@ -116,6 +117,48 @@ Route::prefix('legacy')->group(function () {
         Route::post('/utilisateurs/enseignant', [LegacyUserController::class, 'createEnseignant']);
         Route::post('/utilisateurs/parent', [LegacyUserController::class, 'createParent']);
         Route::patch('/utilisateurs/{id}/toggle', [LegacyUserController::class, 'toggleActif']);
+        // Rechercher les élèves liés à un parent par son nom (pour auto-remplissage du modal)
+        Route::get('/eleves/by-parent-name', function (Illuminate\Http\Request $request) {
+            $nom = strtoupper(trim($request->input('nom', '')));
+            if (strlen($nom) < 2) {
+                return response()->json(['eleves' => [], 'parent' => null]);
+            }
+            
+            $parentIds = DB::table('Personne')
+                ->where('typePersonne', 3)
+                ->where('nom', 'like', "%{$nom}%")
+                ->pluck('idPers')->toArray();
+
+            if (empty($parentIds)) {
+                return response()->json(['eleves' => [], 'parent' => null]);
+            }
+
+            // Récupérer les élèves liés à ces parents ET dont le parent n'a pas encore de VRAI compte
+            // (username vide OU auto-généré commençant par 'P')
+            $eleves = DB::table('Parents')
+                ->join('Eleve', 'Parents.matricule', '=', 'Eleve.matricule')
+                ->join('Personne', 'Parents.idPers', '=', 'Personne.idPers')
+                ->whereIn('Parents.idPers', $parentIds)
+                ->where('Eleve.isDelete', 0)
+                ->where(function($q) {
+                    $q->where('Personne.username', '')
+                      ->orWhere('Personne.username', 'like', 'P%');
+                })
+                ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom', 'Personne.idPers', 'Personne.nom as parent_nom', 'Personne.prenom as parent_prenom')
+                ->get();
+
+            // Prendre le parent du premier élève trouvé pour pré-remplir le formulaire
+            $firstParentId = count($eleves) > 0 ? $eleves[0]->idPers : null;
+            $parentData = null;
+            if ($firstParentId) {
+                $parentData = ['idPers' => $firstParentId, 'nom' => $eleves[0]->parent_nom, 'prenom' => $eleves[0]->parent_prenom];
+            }
+
+            return response()->json([
+                'eleves'  => $eleves,
+                'parent'  => $parentData,
+            ]);
+        });
     });
 
     // Approbation enseignant: fondateur (ou super admin)
@@ -476,7 +519,10 @@ Route::post('/legacy/teacher/attendance/student/{matricule}', function (Illumina
 
     return response()->json(['success' => true]);
 });
-Route::get('/legacy/parent/{idPers}/dashboard', [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getDashboard']);
+Route::get('/legacy/parent/{idPers}/dashboard',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getDashboard']);
+Route::get('/legacy/parent/{idPers}/notes',      [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getNotes']);
+Route::get('/legacy/parent/{idPers}/paiements',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getPaiements']);
+Route::get('/legacy/parent/{idPers}/bulletins',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getBulletins']);
 
 Route::get('/legacy/teacher/assessments/context/{id}', function ($id) {
     $titulaire = DB::table('Titulaire')

@@ -362,5 +362,13 @@ function ParentDashboardContent() {
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+export default function ParentDashboard() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-slate-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" /></div>}>
+      <ParentDashboardContent />
+    </Suspense>
+  );
 }
