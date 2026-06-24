@@ -523,6 +523,7 @@ Route::get('/legacy/parent/{idPers}/dashboard',  [App\Http\Controllers\Legacy\Le
 Route::get('/legacy/parent/{idPers}/notes',      [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getNotes']);
 Route::get('/legacy/parent/{idPers}/paiements',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getPaiements']);
 Route::get('/legacy/parent/{idPers}/bulletins',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getBulletins']);
+Route::get('/legacy/parent/{idPers}/discipline', [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getDiscipline']);
 
 Route::get('/legacy/teacher/assessments/context/{id}', function ($id) {
     $titulaire = DB::table('Titulaire')

@@ -31,6 +31,7 @@ function ParentDashboardContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [bulletinsCount, setBulletinsCount] = useState(0);
 
   useEffect(() => {
     let userId = searchParams.get('userId');
@@ -40,15 +41,22 @@ function ParentDashboardContent() {
     
     if (userId) {
       if (typeof window !== 'undefined') localStorage.setItem('user_id', userId);
-      fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard`)
+      fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard?t=${Date.now()}`)
         .then(res => res.json())
         .then(resData => {
           setData(resData);
-          setLoading(false);
+          
+          fetch(`http://localhost:8000/api/legacy/parent/${userId}/bulletins?t=${Date.now()}`)
+            .then(b => b.json())
+            .then(bData => {
+                setBulletinsCount(bData.bulletins?.length || 0);
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
         })
         .catch(err => {
-          console.error(err);
-          setLoading(false);
+           console.error(err);
+           setLoading(false);
         });
     } else {
       setLoading(false);
@@ -104,9 +112,12 @@ function ParentDashboardContent() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-500">Moyenne générale</p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">14.85</p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">
+                  {data.children.length > 0 
+                    ? (data.children.reduce((acc: number, c: any) => acc + c.average, 0) / data.children.length).toFixed(2) 
+                    : '—'}
+                </p>
                 <p className="mt-1 text-sm text-slate-500">tous enfants confondus</p>
-                <p className="mt-2 text-sm font-medium text-emerald-600">↑ +0.5 ce trimestre</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50">
                 <TrendingUp className="h-6 w-6 text-amber-600" />
@@ -117,8 +128,8 @@ function ParentDashboardContent() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-500">Bulletins disponibles</p>
-                <p className="mt-2 text-3xl font-bold text-slate-900">2</p>
-                <p className="mt-1 text-sm text-slate-500">1er trimestre 2025-2026</p>
+                <p className="mt-2 text-3xl font-bold text-slate-900">{bulletinsCount}</p>
+                <p className="mt-1 text-sm text-slate-500">Trimestre en cours</p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50">
                 <FileText className="h-6 w-6 text-amber-600" />

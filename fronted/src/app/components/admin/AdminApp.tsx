@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap, ClipboardCheck,
   School, UserCheck, CalendarDays, CalendarRange, UserPlus,
@@ -6,6 +7,7 @@ import {
   CreditCard, AlertCircle, MessageSquare, Settings, LogOut,
   Bell, Search, ChevronDown, ChevronRight, Menu, X,
 } from 'lucide-react';
+import { useSettings } from '../../contexts/SettingsContext';
 import { AdminDashboard } from './AdminDashboard';
 import { ClassesView } from './views/ClassesView';
 import { SallesView } from './views/SallesView';
@@ -26,6 +28,7 @@ import { ImpayesView } from './views/ImpayesView';
 import { MessagerieView } from './views/MessagerieView';
 import { UtilisateursView } from './views/UtilisateursView';
 import { ConfigurationView } from './views/ConfigurationView';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 
 // ── Types ─────────────────────────────────────────────────────
 export type AdminView =
@@ -191,16 +194,69 @@ function SidebarGroup({
 
 // ── Main AdminApp ─────────────────────────────────────────────
 export function AdminApp({ onLogout }: AdminAppProps) {
+  const { t } = useTranslation();
+  const { settings } = useSettings();
+  
+  // Determine role
+  const userRole = localStorage.getItem('legacy_admin_type_label') || '';
+  const normalizedRole = userRole.toLowerCase();
+
+  let allowedItems: AdminView[] = [];
+  if (normalizedRole === 'root') {
+    allowedItems = ['dashboard', 'utilisateurs', 'configuration'];
+  } else if (normalizedRole === 'intendant') {
+    allowedItems = ['dashboard', 'paiements', 'impayes'];
+  } else if (normalizedRole === 'fondateur') {
+    allowedItems = ['dashboard', 'paiements', 'impayes', 'configuration', 'utilisateurs'];
+  } else if (normalizedRole === 'administration' || normalizedRole === 'directeur') {
+    allowedItems = [
+      'dashboard', 'classes', 'salles', 'titulaires', 'annees', 'trimestres',
+      'eleves', 'inscriptions', 'matieres', 'emploi-du-temps', 'epreuves',
+      'notes', 'bulletins', 'presences', 'discipline', 'messagerie'
+    ];
+  } else {
+    // Fallback: show everything for super admins or unknown types that bypassed
+    allowedItems = navGroups.flatMap(g => g.items).map(i => i.id);
+  }
+
+  const filteredNavGroups = navGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => allowedItems.includes(item.id))
+  })).filter(group => group.items.length > 0);
+
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const allItems = navGroups.flatMap(g => g.items);
+  const allItems = filteredNavGroups.flatMap(g => g.items);
   const current = allItems.find(i => i.id === activeView);
+
+  // If the active view is not allowed for this role, fallback to dashboard
+  if (!current && activeView !== 'dashboard') {
+    setActiveView('dashboard');
+  }
 
   const handleSelect = (view: AdminView) => {
     setActiveView(view);
     setSidebarOpen(false);
   };
+
+  const getThemePalette = (role: string) => {
+    switch (role) {
+      case 'directeur': // Purple
+        return { 50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe', 400: '#c084fc', 500: '#a855f7', 600: '#9333ea', 700: '#7e22ce', 800: '#6b21a8', 900: '#581c87', 950: '#3b0764' };
+      case 'fondateur': // Amber
+        return { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f', 950: '#451a03' };
+      case 'intendant': // Teal
+        return { 50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4', 400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e', 800: '#115e59', 900: '#134e4a', 950: '#042f2e' };
+      case 'administration': // Slate
+        return { 50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1', 400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155', 800: '#1e293b', 900: '#0f172a', 950: '#020617' };
+      case 'root':
+      default:
+        return null; // Keep default blue
+    }
+  };
+
+  const themePalette = getThemePalette(normalizedRole);
 
   const renderContent = () => {
     switch (activeView) {
@@ -231,7 +287,24 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-50 overflow-hidden dark:bg-slate-900 admin-theme-wrapper">
+      {themePalette && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .admin-theme-wrapper {
+            --color-blue-50: ${themePalette[50]};
+            --color-blue-100: ${themePalette[100]};
+            --color-blue-200: ${themePalette[200]};
+            --color-blue-300: ${themePalette[300]};
+            --color-blue-400: ${themePalette[400]};
+            --color-blue-500: ${themePalette[500]};
+            --color-blue-600: ${themePalette[600]};
+            --color-blue-700: ${themePalette[700]};
+            --color-blue-800: ${themePalette[800]};
+            --color-blue-900: ${themePalette[900]};
+            --color-blue-950: ${themePalette[950]};
+          }
+        `}} />
+      )}
 
       {/* ── Overlay (mobile) ── */}
       {sidebarOpen && (
@@ -251,11 +324,11 @@ export function AdminApp({ onLogout }: AdminAppProps) {
 
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-700/50">
-          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-            <GraduationCap className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center flex-shrink-0 p-0.5">
+            <img src="/logo_les_genies.png" alt="Logo de l'école" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <p className="text-white text-sm truncate" style={{ fontWeight: 700 }}>Les Genies</p>
+            <p className="text-white text-sm truncate" style={{ fontWeight: 700 }}>{settings.schoolName || 'Les Génies'}</p>
             <p className="text-slate-500 text-xs">Espace Administrateur</p>
           </div>
           <button
@@ -268,7 +341,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 scrollbar-thin">
-          {navGroups.map((group, i) => (
+          {filteredNavGroups.map((group, i) => (
             <SidebarGroup
               key={i}
               group={group}
@@ -282,12 +355,16 @@ export function AdminApp({ onLogout }: AdminAppProps) {
         {/* User + Logout */}
         <div className="border-t border-slate-700/50 p-3 space-y-1">
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 text-white text-xs" style={{ fontWeight: 700 }}>
-              AD
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 text-white text-xs uppercase" style={{ fontWeight: 700 }}>
+              {normalizedRole ? normalizedRole.substring(0, 2) : 'AD'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm truncate" style={{ fontWeight: 600 }}>Admin</p>
-              <p className="text-slate-500 text-xs truncate">admin@saint-michel.edu</p>
+              <p className="text-white text-sm truncate capitalize" style={{ fontWeight: 600 }}>
+                {normalizedRole || 'Administrateur'}
+              </p>
+              <p className="text-slate-500 text-xs truncate">
+                {normalizedRole ? `${normalizedRole}@lesgenies.cm` : 'admin@lesgenies.cm'}
+              </p>
             </div>
           </div>
           <button
@@ -295,8 +372,12 @@ export function AdminApp({ onLogout }: AdminAppProps) {
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/8 transition-colors text-sm"
           >
             <LogOut className="w-4 h-4" />
-            Déconnexion
+            {t('common.logout')}
           </button>
+          {/* Language switcher in sidebar */}
+          <div className="px-1 pt-1">
+            <LanguageSwitcher variant="dark" />
+          </div>
         </div>
       </aside>
 

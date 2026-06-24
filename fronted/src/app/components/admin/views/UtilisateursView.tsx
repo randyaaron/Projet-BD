@@ -19,11 +19,23 @@ export function UtilisateursView() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [form, setForm] = useState({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
-  // Matircules sélectionnés (multi)
   const [selectedMatricules, setSelectedMatricules] = useState<number[]>([]);
   // Résultat de la recherche par nom de parent
   const [parentSearchResult, setParentSearchResult] = useState<{ eleves: any[], parent: any | null } | null>(null);
   const [searchingParent, setSearchingParent] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
+  const [profileType, setProfileType] = useState<'enseignant' | 'parent' | null>(null);
+
+  const getAvatarUrl = (nom: string, prenom: string, type: 'enseignant' | 'parent' | 'admin') => {
+    // Generate photorealistic African AI portraits
+    if (type === 'enseignant' || type === 'parent') {
+      const str = `${nom}-${prenom}`;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      return (Math.abs(hash) % 2 === 0) ? '/avatars/african_male_teacher.png' : '/avatars/african_female_teacher.png';
+    }
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nom)}&backgroundColor=f1f5f9`;
+  };
 
   useEffect(() => { fetchAll(); }, []);
 
@@ -191,12 +203,10 @@ export function UtilisateursView() {
                 <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-sm">Aucun enseignant.</td></tr>
               )}
               {data.enseignants.map((e: any) => (
-                <tr key={e.id} className="hover:bg-slate-50">
+                <tr key={e.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setSelectedProfile(e); setProfileType('enseignant'); }}>
                   <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {e.nom?.charAt(0)}{e.prenom?.charAt(0)}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <img src={getAvatarUrl(e.nom, e.prenom, 'enseignant')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
                       <p className="font-semibold text-slate-900">{e.nom} {e.prenom}</p>
                     </div>
                   </td>
@@ -205,7 +215,7 @@ export function UtilisateursView() {
                   </td>
                   <td className="px-5 py-3 text-slate-500 text-xs">{e.mobile || '—'}</td>
                   <td className="px-5 py-3 text-slate-400 text-xs">{e.email || '—'}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3" onClick={(event) => event.stopPropagation()}>
                     <button
                       onClick={() => handleToggle(e.id, 'enseignant')}
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${e.actif ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
@@ -231,16 +241,14 @@ export function UtilisateursView() {
                 <tr><td colSpan={6} className="text-center py-8 text-slate-400 text-sm">Aucun parent enregistré.</td></tr>
               )}
               {data.parents.map((p: any) => (
-                <tr key={p.id} className="hover:bg-slate-50">
+                <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setSelectedProfile(p); setProfileType('parent'); }}>
                   <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                        {p.nom?.charAt(0)}{p.prenom?.charAt(0)}
-                      </div>
+                    <div className="flex items-center gap-3">
+                      <img src={getAvatarUrl(p.nom, p.prenom, 'parent')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
                       <p className="font-semibold text-slate-900">{p.nom} {p.prenom}</p>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-xs font-mono text-slate-700 bg-slate-100 px-2 py-0.5 rounded inline-block">{p.username || '—'}</td>
+                  <td className="px-5 py-3"><p className="text-xs font-mono text-slate-700 bg-slate-100 px-2 py-0.5 rounded inline-block">{p.username || '—'}</p></td>
                   <td className="px-5 py-3 text-slate-500 text-xs">{p.mobile || '—'}</td>
                   <td className="px-5 py-3 text-slate-400 text-xs">{p.email || '—'}</td>
                   <td className="px-5 py-3">
@@ -248,7 +256,7 @@ export function UtilisateursView() {
                       <span className="text-xs text-slate-600 font-semibold">{p.eleveNom} {p.elevePrenom}</span>
                     ) : <span className="text-slate-300 text-xs">—</span>}
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3" onClick={(event) => event.stopPropagation()}>
                     <button
                       onClick={() => handleToggle(p.id, 'parent')}
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${p.actif ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'}`}
@@ -262,6 +270,57 @@ export function UtilisateursView() {
           </table>
         )}
       </div>
+
+      {/* Profil Modal Utilisateur */}
+      {selectedProfile && profileType && (
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className={`relative h-24 ${profileType === 'enseignant' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}>
+              <button onClick={() => { setSelectedProfile(null); setProfileType(null); }} className="absolute top-3 right-3 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-1.5 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="absolute -bottom-10 left-6">
+                <img src={getAvatarUrl(selectedProfile.nom, selectedProfile.prenom, profileType)} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" />
+              </div>
+            </div>
+            
+            <div className="px-6 pt-12 pb-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{selectedProfile.nom} {selectedProfile.prenom}</h2>
+                  <p className={`${profileType === 'enseignant' ? 'text-emerald-600' : 'text-blue-600'} font-semibold text-sm capitalize`}>
+                    {profileType} — ID {selectedProfile.id}
+                  </p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${selectedProfile.actif ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  {selectedProfile.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Nom d'utilisateur</p>
+                  <p className="text-slate-800 font-mono text-sm">{selectedProfile.username || 'N/A'}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Mobile</p>
+                  <p className="text-slate-800 font-medium text-sm">{selectedProfile.mobile || 'N/A'}</p>
+                </div>
+                <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Email</p>
+                  <p className="text-slate-800 font-medium text-sm">{selectedProfile.email || 'N/A'}</p>
+                </div>
+                {profileType === 'parent' && selectedProfile.eleveNom && (
+                  <div className="col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Élève lié (Dernier)</p>
+                    <p className="text-slate-800 font-medium text-sm">{selectedProfile.eleveNom} {selectedProfile.elevePrenom}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal création compte */}
       {modalType && (

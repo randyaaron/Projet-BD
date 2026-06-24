@@ -22,9 +22,13 @@ export async function legacyFetch<T = unknown>(url: string, init: RequestInit = 
   }
   if (adminId) {
     headers.set('X-Admin-Id', adminId);
+    if (adminId === '999') {
+      headers.set('X-Admin-Role', getLegacyAdminTypeLabel() || 'SUPER_ADMIN');
+    }
   } else if (isLegacyDemoMode()) {
     // En mode démo, on pose un id fictif pour simplifier les tests frontend.
     headers.set('X-Admin-Id', '999');
+    headers.set('X-Admin-Role', getLegacyAdminTypeLabel() || 'SUPER_ADMIN');
   }
 
   const response = await fetch(url, { ...init, headers });

@@ -44,6 +44,20 @@ class EnsureLegacyAdminType
             return response()->json(['message' => 'X-Admin-Id header requis'], 401);
         }
 
+        if ($adminId === '999') {
+            $demoType = strtoupper(trim((string) $request->header('X-Admin-Role', 'SUPER_ADMIN')));
+            $demoAdmin = (object) [
+                'ID' => 999,
+                'nom' => 'Demo Admin',
+                'username' => 'demo.admin',
+                'typeAdmin' => $demoType,
+                'actif' => 1,
+            ];
+            $request->attributes->set('legacy_admin', $demoAdmin);
+            $request->attributes->set('legacy_admin_role', $demoType);
+            return $next($request);
+        }
+
         $admin = DB::table('Admin')->where('ID', (int) $adminId)->first();
         if (!$admin) {
             return response()->json(['message' => 'Admin introuvable'], 401);

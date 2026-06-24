@@ -74,7 +74,7 @@ function GradesContent() {
       try {
         setFetching(true);
         // Fetch base context (students, subjects, examen grades from Evaluation table)
-        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}?t=${Date.now()}`);
         if (resCtx.status === 404) {
           const body = await resCtx.json();
           setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { I18nProvider } from '@/components/I18nProvider'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -35,9 +36,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="fr">
       <body className="font-sans antialiased">
-        {children}
+        <I18nProvider>
+          {children}
+        </I18nProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

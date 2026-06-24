@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, UserPlus, Eye, Pencil, Trash2, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Eye, Trash2, ChevronLeft, ChevronRight, X, Loader2, Users, GraduationCap, MapPin, Calendar } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
 const API = 'http://localhost:8000/api/legacy';
@@ -16,14 +16,14 @@ export function ElevesView() {
   const [filterClasse, setFilterClasse] = useState('');
   const [filterSexe, setFilterSexe] = useState('');
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<number[]>([]);
+
+  const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
 
   useEffect(() => {
     fetchEleves();
     legacyFetch<any>(`${API}/classes`).then(r => setClassesList(r.data || [])).catch(console.error);
     legacyFetch<any>(`${API}/salles`).then(r => setSallesList(r.data || [])).catch(console.error);
   }, []);
-
 
   const fetchEleves = async () => {
     setLoading(true);
@@ -38,34 +38,34 @@ export function ElevesView() {
   };
 
   const getCompatibleSalles = (currentClass: string) => {
-    // Only rooms that are active AND have a real class assigned (not null)
     const assignedRooms = sallesList.filter((s: any) => s.actif === 1 && s.idClasse && s.idClasse !== 999);
     if (!currentClass || currentClass === 'Non assigné' || currentClass === 'Non assignée') {
-      return assignedRooms; // show all available rooms when no class yet
+      return assignedRooms;
     }
     const prefix = currentClass.split('-')[0];
     const compatible = assignedRooms.filter((s: any) => {
       const sLib = s.classeLibelle || '';
       return sLib.startsWith(prefix);
     });
-    // If no compatible rooms found for this prefix, return all rooms
     return compatible.length > 0 ? compatible : assignedRooms;
   };
 
   const handleAssignClass = async (matricule: number, idSalle: string) => {
-    if (!idSalle) return;
     setAssignLoading(String(matricule));
     try {
       await legacyFetch(`${API}/eleves/${matricule}/assign-class`, {
         method: 'POST',
-        body: JSON.stringify({ idSalle: parseInt(idSalle) })
+        body: JSON.stringify({ idSalle: idSalle ? parseInt(idSalle) : null })
       });
-      // Mettre à jour l'élève localement
-      const salle = sallesList.find(s => String(s.idSalle) === idSalle);
-      if (salle) {
-        setEleves(prev => prev.map(e => e.matricule === matricule ? { ...e, classe: salle.classeLibelle || salle.libelle, idSalle: salle.idSalle } : e));
+      if (!idSalle) {
+        setEleves(prev => prev.map(e => e.matricule === matricule ? { ...e, classe: null, idSalle: null } : e));
       } else {
-        fetchEleves();
+        const salle = sallesList.find(s => String(s.idSalle) === idSalle);
+        if (salle) {
+          setEleves(prev => prev.map(e => e.matricule === matricule ? { ...e, classe: salle.classeLibelle || salle.libelle, idSalle: salle.idSalle } : e));
+        } else {
+          fetchEleves();
+        }
       }
     } catch (err) {
       console.error("Erreur d'assignation", err);
@@ -81,10 +81,8 @@ export function ElevesView() {
     try {
       await legacyFetch(`${API}/eleves/${matricule}/toggle`, { method: 'PATCH' });
       if (willBeActive) {
-        // Reactivation: refresh from server to get real data
         await fetchEleves();
       } else {
-        // Deactivation: optimistic update is fine
         setEleves(prev => prev.map(e => e.matricule === matricule ? {
           ...e,
           actif: 0,
@@ -107,138 +105,259 @@ export function ElevesView() {
   const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const toggleSelect = (id: number) => {
-    setSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  const getAvatarUrl = (nom: string, prenom: string, sexe: number | string) => {
+    const isGirl = String(sexe) === '2';
+    return isGirl ? '/avatars/african_girl_student.png' : '/avatars/african_boy_student.png';
   };
 
-  const avatarColor = (sexe: number | string) => String(sexe) === '2' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700';
-
-  if (loading) return <div className="p-6">Chargement des élèves...</div>;
+  if (loading) return (
+    <div className="flex h-full items-center justify-center space-x-2 text-blue-600">
+      <Loader2 className="w-8 h-8 animate-spin" />
+      <span className="font-medium">Chargement des élèves...</span>
+    </div>
+  );
 
   return (
-    <div className="p-6 space-y-5 overflow-y-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-8 space-y-8 bg-slate-50 min-h-full">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <div>
-          <h1 className="text-slate-900" style={{ fontSize: '1.375rem', fontWeight: 700 }}>Liste des élèves (Réelle)</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{eleves.length} élèves inscrits en base de données</p>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-3">
+            <Users className="w-8 h-8 text-blue-600 p-1.5 bg-blue-100 rounded-lg" />
+            Gestion des Élèves
+          </h1>
+          <p className="text-slate-500 mt-2">
+            Consultez la liste des élèves, assignez-les à des classes et gérez leurs statuts.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      {/* STATS CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total inscrits', val: eleves.length, cls: 'text-slate-900' },
-          { label: 'Garçons', val: eleves.filter(e => String(e.sexe) === '1').length, cls: 'text-blue-700' },
-          { label: 'Filles', val: eleves.filter(e => String(e.sexe) === '2').length, cls: 'text-pink-600' },
-          { label: 'Inactifs', val: eleves.filter(e => !e.actif).length, cls: 'text-red-600' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3">
-            <p className="text-slate-400 text-xs">{s.label}</p>
-            <p className={`mt-0.5 ${s.cls}`} style={{ fontSize: '1.5rem', fontWeight: 700 }}>{s.val}</p>
-          </div>
-        ))}
+          { label: 'Total inscrits', val: eleves.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+          { label: 'Garçons', val: eleves.filter(e => String(e.sexe) === '1').length, icon: UserPlus, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+          { label: 'Filles', val: eleves.filter(e => String(e.sexe) === '2').length, icon: UserPlus, color: 'text-pink-600', bg: 'bg-pink-50', border: 'border-pink-200' },
+          { label: 'Inactifs', val: eleves.filter(e => !e.actif).length, icon: Trash2, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+        ].map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div key={i} className={`bg-white rounded-2xl shadow-sm border ${s.border} p-5 flex items-center gap-4 transition-transform hover:-translate-y-1`}>
+              <div className={`p-3 rounded-xl ${s.bg}`}>
+                <Icon className={`w-6 h-6 ${s.color}`} />
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{s.label}</p>
+                <p className={`text-2xl font-extrabold ${s.color}`}>{s.val}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2 flex-1 min-w-56">
-          <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Nom, prénom ou matricule…" className="flex-1 bg-transparent outline-none text-sm text-slate-700 placeholder-slate-400" />
+      {/* FILTRES */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <div className="flex items-center gap-3 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 flex-1 w-full focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+          <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          <input 
+            value={search} 
+            onChange={e => { setSearch(e.target.value); setPage(1); }} 
+            placeholder="Rechercher par nom, prénom ou matricule..." 
+            className="flex-1 bg-transparent outline-none text-slate-700 font-medium placeholder-slate-400" 
+          />
         </div>
-        <select value={filterClasse} onChange={e => { setFilterClasse(e.target.value); setPage(1); }} className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none">
-          <option value="">Toutes les classes</option>
-          {classesList.map((c: any) => <option key={c.idClasse} value={String(c.idClasse)}>{c.libelle}</option>)}
-        </select>
-        <select value={filterSexe} onChange={e => { setFilterSexe(e.target.value); setPage(1); }} className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none">
-          <option value="">Tous les sexes</option>
-          <option value="1">Garçons</option>
-          <option value="2">Filles</option>
-        </select>
+        <div className="flex gap-4 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-48">
+            <select 
+              value={filterClasse} 
+              onChange={e => { setFilterClasse(e.target.value); setPage(1); }} 
+              className="w-full pl-4 pr-10 py-3 border-2 border-slate-100 rounded-xl text-slate-700 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none bg-slate-50"
+            >
+              <option value="">Toutes les classes</option>
+              {classesList.map((c: any) => <option key={c.idClasse} value={String(c.idClasse)}>{c.libelle}</option>)}
+            </select>
+            <GraduationCap className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <div className="relative flex-1 sm:w-40">
+            <select 
+              value={filterSexe} 
+              onChange={e => { setFilterSexe(e.target.value); setPage(1); }} 
+              className="w-full pl-4 pr-10 py-3 border-2 border-slate-100 rounded-xl text-slate-700 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all appearance-none bg-slate-50"
+            >
+              <option value="">Tous sexes</option>
+              <option value="1">Garçons</option>
+              <option value="2">Filles</option>
+            </select>
+            <Users className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* TABLE */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
-              {['Matricule', 'Élève', 'Classe', 'Naissance', 'Statut', ''].map(h => (
-                <th key={h} className="text-left px-3 py-3 text-slate-500 text-xs uppercase tracking-wide" style={{ fontWeight: 600 }}>{h}</th>
+            <tr className="border-b border-slate-100 bg-slate-50/50">
+              {['Matricule', 'Élève', 'Classe assignée', 'Naissance', 'Statut', 'Actions'].map(h => (
+                <th key={h} className="text-left px-6 py-4 text-slate-500 font-bold text-xs uppercase tracking-wider">{h}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-slate-100">
             {paged.map(el => (
-              <tr key={el.matricule} className="hover:bg-slate-50 transition-colors">
-                <td className="px-3 py-3 text-slate-500 text-xs">{el.matricule}</td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${avatarColor(el.sexe)}`} style={{ fontWeight: 700 }}>
-                      {el.prenom?.charAt(0)}{el.nom?.charAt(0)}
+              <tr key={el.matricule} className={`hover:bg-slate-50/80 transition-colors ${!el.actif ? 'opacity-70' : ''}`}>
+                <td className="px-6 py-4 text-slate-400 font-mono font-medium">{el.matricule}</td>
+                <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedProfile(el)}>
+                  <div className="flex items-center gap-4 group">
+                    <div className="relative">
+                      <img src={getAvatarUrl(el.nom, el.prenom, el.sexe)} alt="Avatar" className="w-12 h-12 rounded-xl border-2 border-slate-100 shadow-sm object-cover group-hover:border-blue-400 transition-colors bg-white" />
+                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${el.actif ? 'bg-emerald-500' : 'bg-red-500'}`} />
                     </div>
                     <div>
-                      <p className="text-slate-900" style={{ fontWeight: 600 }}>{el.nom} {el.prenom}</p>
-                      <p className="text-slate-400 text-xs">{String(el.sexe) === '2' ? 'Fille' : 'Garçon'}</p>
+                      <p className="text-slate-900 font-bold group-hover:text-blue-600 transition-colors text-base">{el.nom} {el.prenom}</p>
+                      <p className="text-slate-400 text-xs font-medium">{String(el.sexe) === '2' ? 'Fille' : 'Garçon'}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-3 py-3">
+                <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {assignLoading === String(el.matricule) ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 border-2 border-blue-100">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        <span className="text-xs font-bold text-blue-600">Assignation...</span>
+                      </div>
                     ) : !el.actif ? (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 rounded-md text-xs" style={{ fontWeight: 600 }}>
+                      <span className="px-3 py-2 bg-slate-50 text-slate-400 border-2 border-slate-200 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
                         {el.classe || 'Non assigné'}
                       </span>
                     ) : (
-                      <select
-                        value={el.idSalle || ''}
-                        onChange={(e) => handleAssignClass(el.matricule, e.target.value)}
-                        className={`text-xs font-semibold px-2 py-1 rounded-md border outline-none cursor-pointer transition-colors ${
-                          el.classe ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        <option value="">-- Non assigné --</option>
-                        {getCompatibleSalles(el.classe).map((s: any) => (
-                          <option key={s.idSalle} value={s.idSalle}>
-                            {s.classeLibelle}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative group">
+                        <select
+                          value={el.idSalle || ''}
+                          onChange={(e) => handleAssignClass(el.matricule, e.target.value)}
+                          className={`text-sm font-bold pl-4 pr-10 py-2.5 rounded-xl border-2 outline-none cursor-pointer transition-all appearance-none shadow-sm group-hover:shadow-md
+                            ${el.classe 
+                              ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20' 
+                              : 'bg-white border-blue-300 border-dashed text-blue-500 hover:border-blue-400 hover:bg-blue-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20'
+                            }`}
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 0.75rem center',
+                            backgroundSize: '1rem 1rem'
+                          }}
+                        >
+                          <option value="">Non assigné</option>
+                          {getCompatibleSalles(el.classe).map((s: any) => (
+                            <option key={s.idSalle} value={s.idSalle}>
+                              {s.classeLibelle} (Salle: {s.libelle})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     )}
                   </div>
                 </td>
-                <td className="px-3 py-3 text-slate-500 text-xs">{el.dateNaissance ? new Date(el.dateNaissance).toLocaleDateString('fr-FR') : 'N/A'}</td>
-                <td className="px-3 py-3">
-                  <button onClick={() => handleToggleActif(el.matricule)} className={`px-2 py-0.5 rounded-full text-xs border ${el.actif ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'} transition-colors`} style={{ fontWeight: 600 }}>
-                    {el.actif ? 'Actif' : 'Inactif'}
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2 text-slate-500 font-medium">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    {el.dateNaissance ? new Date(el.dateNaissance).toLocaleDateString('fr-FR') : 'N/A'}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <button 
+                    onClick={() => handleToggleActif(el.matricule)} 
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all hover:-translate-y-0.5 ${
+                      el.actif 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:shadow-sm' 
+                        : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:shadow-sm'
+                    }`}
+                  >
+                    {el.actif ? 'Compte Actif' : 'Désactivé'}
                   </button>
                 </td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-1 justify-end">
-                    <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Eye className="w-3.5 h-3.5" /></button>
-                    <button className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
-                  </div>
+                <td className="px-6 py-4">
+                  <button onClick={() => setSelectedProfile(el)} className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-xl transition-colors font-bold flex items-center gap-2">
+                    <Eye className="w-4 h-4" /> <span className="text-xs">Profil</span>
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        
         {filtered.length === 0 && (
-          <div className="text-center py-12 text-slate-400 text-sm">Aucun élève ne correspond à votre recherche.</div>
+          <div className="text-center py-16">
+            <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-slate-500 font-medium">Aucun élève ne correspond à votre recherche.</p>
+          </div>
         )}
+        
         {pages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
-            <p className="text-slate-400 text-xs">{filtered.length} résultat{filtered.length > 1 ? 's' : ''}</p>
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-slate-500 text-sm font-medium">
+              Affichage de {paged.length} sur {filtered.length} élèves
+            </p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-40 transition-colors">
-                <ChevronLeft className="w-4 h-4" />
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-xl bg-white border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-colors shadow-sm">
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-slate-600 text-sm px-2">{page} / {pages}</span>
-              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-40 transition-colors">
-                <ChevronRight className="w-4 h-4" />
+              <span className="text-slate-700 font-bold px-3">Page {page} sur {pages}</span>
+              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="p-2 rounded-xl bg-white border-2 border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-colors shadow-sm">
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
         )}
       </div>
 
+      {/* Profil Modal Élève */}
+      {selectedProfile && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative h-32 bg-gradient-to-r from-blue-600 to-indigo-600">
+              <button onClick={() => setSelectedProfile(null)} className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-full transition-colors backdrop-blur-md">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="absolute -bottom-12 left-8">
+                <img src={getAvatarUrl(selectedProfile.nom, selectedProfile.prenom, selectedProfile.sexe)} alt="Profile" className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg bg-white object-cover" />
+              </div>
+            </div>
+
+            <div className="px-8 pt-16 pb-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">{selectedProfile.nom} {selectedProfile.prenom}</h2>
+                  <p className="text-blue-600 font-bold mt-1">Matricule : {selectedProfile.matricule}</p>
+                </div>
+                <span className={`px-3 py-1.5 rounded-lg text-sm font-bold border-2 ${selectedProfile.actif ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                  {selectedProfile.actif ? 'Compte Actif' : 'Compte Inactif'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Users className="w-4 h-4" /> Sexe</p>
+                  <p className="text-slate-800 font-bold">{String(selectedProfile.sexe) === '2' ? 'Féminin' : 'Masculin'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Classe</p>
+                  <p className="text-slate-800 font-bold">{selectedProfile.classe || 'Non assignée'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Calendar className="w-4 h-4" /> Date de naissance</p>
+                  <p className="text-slate-800 font-bold">{selectedProfile.dateNaissance ? new Date(selectedProfile.dateNaissance).toLocaleDateString('fr-FR') : 'N/A'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><MapPin className="w-4 h-4" /> Lieu de naissance</p>
+                  <p className="text-slate-800 font-bold">{selectedProfile.lieuNaissance || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

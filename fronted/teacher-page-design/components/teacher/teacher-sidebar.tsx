@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const navigation = [
   { name: 'Tableau de bord', href: '/teacher', icon: LayoutDashboard },
@@ -54,8 +55,8 @@ export function TeacherSidebar() {
         )}>
           {!collapsed && (
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
-                <GraduationCap className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-0.5">
+                <img src="/logo_les_genies.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Les Genies</span>
@@ -64,8 +65,8 @@ export function TeacherSidebar() {
             </div>
           )}
           {collapsed && (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600">
-              <GraduationCap className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-0.5">
+              <img src="/logo_les_genies.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
           )}
           <button
@@ -181,6 +182,12 @@ export function TeacherSidebar() {
               </button>
             )}
           </div>
+          {/* Language Switcher */}
+          {!collapsed && (
+            <div className="mt-3">
+              <LanguageSwitcher variant="dark" />
+            </div>
+          )}
         </div>
       </aside>
     </TooltipProvider>

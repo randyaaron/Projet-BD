@@ -194,25 +194,59 @@ class LegacyParentDashboardController extends Controller
             $trimestres = DB::table('Trimestre')->get();
             foreach ($trimestres as $t) {
                 $notes = DB::table('Evaluation')
-                    ->where('matricule', $child['id'])
+                    ->join('Session', 'Evaluation.idSession', '=', 'Session.idSession')
+                    ->where('Evaluation.matricule', $child['id'])
+                    ->where('Session.idTrimestre', $t->idTrimes)
                     ->pluck('note');
 
                 if ($notes->isEmpty()) continue;
 
                 $avg = round($notes->average(), 2);
                 $bulletins[] = [
-                    'id'           => $child['id'] . '_' . ($t->idTrimestre ?? $t->id ?? uniqid()),
+                    'id'           => $child['id'] . '_' . ($t->idTrimes ?? uniqid()),
                     'child'        => $child,
                     'trimestre'    => $t->libelle ?? 'Trimestre',
                     'annee'        => date('Y') . '-' . (date('Y') + 1),
                     'average'      => $avg,
                     'status'       => 'available',
-                    'date'         => $t->dateFin ?? date('Y-m-d'),
+                    'date'         => date('Y-m-d'),
                     'totalMatières'=> DB::table('Evaluation')->where('matricule', $child['id'])->distinct('idCours')->count('idCours'),
                 ];
             }
         }
 
         return response()->json(['bulletins' => $bulletins]);
+    }
+
+    /** Discipline (Sanctions et Absences) */
+    public function getDiscipline(Request $request, $idPers)
+    {
+        $children = $this->getChildren((int) $idPers);
+        $result = [];
+
+        foreach ($children as $child) {
+            $sanctions = DB::table('sanctions')
+                ->where('student_id', $child['id'])
+                ->orderBy('date', 'desc')
+                ->get();
+
+            $formattedSanctions = [];
+            foreach ($sanctions as $s) {
+                $formattedSanctions[] = [
+                    'id' => $s->id,
+                    'motif' => $s->motif,
+                    'points' => $s->points,
+                    'date' => date('d M Y', strtotime($s->date)),
+                    'created_at' => $s->created_at
+                ];
+            }
+
+            $result[] = [
+                'child' => $child,
+                'sanctions' => $formattedSanctions
+            ];
+        }
+
+        return response()->json(['data' => $result]);
     }
 }

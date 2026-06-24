@@ -85,13 +85,19 @@ class LegacyTitulaireController extends Controller
         return response()->json(['message' => 'Affectation supprimée']);
     }
 
-    /** Liste des enseignants depuis la table Enseignant (avec détails Personne) */
+    /** Liste des enseignants non encore affectés à une salle */
     public function enseignants()
     {
+        // On exclut les enseignants qui sont déjà titulaires d'une salle active
+        $assignedTeacherIds = DB::table('Titulaire')
+            ->where('actif', 1)
+            ->pluck('idPers');
+
         $data = DB::table('Enseignant')
             ->join('Personne', 'Enseignant.idPers', '=', 'Personne.idPers')
             ->where('Enseignant.Actif', 1)
             ->where('Enseignant.isDelete', 0)
+            ->whereNotIn('Enseignant.idPers', $assignedTeacherIds)
             ->select(
                 'Enseignant.idEnseignant',
                 'Enseignant.idPers',

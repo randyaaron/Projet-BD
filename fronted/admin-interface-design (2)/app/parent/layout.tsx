@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { LanguageSwitcher } from "@/components/LanguageSwitcher"
 
 const navigation = [
   { name: "Tableau de bord", href: "/parent", icon: Home },
@@ -25,6 +26,7 @@ const navigation = [
   { name: "Notes", href: "/parent/notes", icon: BookOpen },
   { name: "Paiements", href: "/parent/paiements", icon: CreditCard },
   { name: "Messages", href: "/parent/messages", icon: MessageSquare },
+  { name: "Discipline", href: "/parent/discipline", icon: BookOpen }, // Added Discipline tab
 ]
 
 export function ParentLayoutInner({
@@ -166,6 +168,12 @@ export function ParentLayoutInner({
               </>
             )}
           </div>
+          {/* Language switcher */}
+          {!collapsed && (
+            <div className="mt-3">
+              <LanguageSwitcher variant="dark" />
+            </div>
+          )}
         </div>
       </aside>
 
@@ -191,6 +199,9 @@ export function ParentLayoutInner({
               <BookOpen className="h-4 w-4 text-white" />
             </div>
             <span className="font-semibold text-slate-900">Les Genies</span>
+          </div>
+          <div className="ml-auto">
+            <LanguageSwitcher variant="light" />
           </div>
         </header>
 

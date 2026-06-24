@@ -27,7 +27,7 @@ function NotesContent() {
     const userId = urlId || localStorage.getItem('parent_user_id');
     if (!userId) { setLoading(false); return; }
 
-    fetch(`${API}/parent/${userId}/notes`)
+    fetch(`${API}/parent/${userId}/notes?t=${Date.now()}`)
       .then(r => r.json())
       .then(res => {
         setData(res.data || []);
