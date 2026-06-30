@@ -19,8 +19,8 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         {/* Background Image & Overlay */}
         <div className="absolute inset-0">
           <img
-            src="/Interior%20of%20a%20classroom%20with%20natural%20light%20AI%20generated.jpeg"
-            alt="Salle de classe primaire"
+            src="/african_primary_classroom.png"
+            alt="Salle de classe primaire africaine"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-blue-900/70 to-slate-800/80 backdrop-blur-[2px]" />
@@ -106,6 +106,39 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         </div>
       </section>
 
+      {/* PHOTO GALLERY */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <span className="text-blue-600 font-semibold text-sm uppercase tracking-widest">Notre École</span>
+            <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mt-2">La Vie à l'École Les Génies</h3>
+            <p className="text-slate-500 mt-3 max-w-2xl mx-auto">Un cadre d'apprentissage moderne et stimulant au cœur de Yaoundé</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="col-span-2 md:col-span-2 row-span-2 overflow-hidden rounded-2xl h-72 md:h-full">
+              <img src="/african_primary_banner.png" alt="Salle de classe" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+            <div className="overflow-hidden rounded-2xl h-36 md:h-44">
+              <img src="/african_primary_students.png" alt="Élèves" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+            <div className="overflow-hidden rounded-2xl h-36 md:h-44">
+              <img src="/african_primary_classroom.png" alt="Cours" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div className="overflow-hidden rounded-2xl h-36">
+              <img src="/african_primary_library.png" alt="Bibliothèque" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+            <div className="overflow-hidden rounded-2xl h-36">
+              <img src="/african_primary_teacher.png" alt="Enseignant" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+            <div className="overflow-hidden rounded-2xl h-36">
+              <img src="/african_primary_activities.png" alt="Activités" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* SCHOOL PRESENTATION SECTION */}
       <section className="bg-white py-24 px-6">
         <div className="max-w-6xl mx-auto text-center mb-16">
@@ -162,6 +195,77 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
               <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"/> Ateliers artistiques</li>
               <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-purple-500"/> Sorties éducatives</li>
             </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* PARALLAX BANNER */}
+      <section className="relative h-80 overflow-hidden">
+        <img src="/african_primary_students.png" alt="Éducation" className="w-full h-full object-cover scale-110" style={{transform:'scale(1.1)', objectPosition:'center 30%'}} />
+        <div className="absolute inset-0 bg-blue-900/75 flex flex-col items-center justify-center text-center px-6">
+          <h3 className="text-3xl md:text-4xl font-extrabold text-white mb-4">"Former les esprits, bâtir l'avenir."</h3>
+          <p className="text-blue-200 text-lg max-w-xl">Notre mission : révéler le génie qui sommeille en chaque enfant, de la maternelle au CM2.</p>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="bg-slate-50 py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <span className="text-blue-600 font-semibold text-sm uppercase tracking-widest">Témoignages</span>
+            <h3 className="text-3xl font-bold text-slate-900 mt-2">Ce que disent les familles</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {name:'Marie K.', role:'Mère d\'élève – CE2', text:'Depuis que mon fils est à Les Génies, ses notes ont considérablement progressé. Le suivi des enseignants est exceptionnel.', avatar:'MK'},
+              {name:'Paul N.', role:'Père d\'élève – CM1', text:'Le portail numérique est fantastique ! Je consulte les notes et l\'assiduité de ma fille à tout moment depuis mon téléphone.', avatar:'PN'},
+              {name:'Awa B.', role:'Mère d\'élève – Maternelle', text:'Un environnement sécurisé et bienveillant. Mon enfant adore l\'école et les activités parascolaires proposées.', avatar:'AB'},
+            ].map((t,i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+                <div className="flex gap-1 mb-4">{[1,2,3,4,5].map(s=><span key={s} className="text-yellow-400 text-lg">★</span>)}</div>
+                <p className="text-slate-600 leading-relaxed mb-5 italic">"{t.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">{t.avatar}</div>
+                  <div><p className="font-bold text-slate-900 text-sm">{t.name}</p><p className="text-slate-400 text-xs">{t.role}</p></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* INSTALLATIONS */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <span className="text-emerald-600 font-semibold text-sm uppercase tracking-widest">Nos Infrastructures</span>
+            <h3 className="text-3xl font-bold text-slate-900 mt-2">Des installations modernes</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="relative overflow-hidden rounded-2xl h-64 group">
+              <img src="/african_primary_classroom.png" alt="Salles informatisées" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+                <div><p className="text-white font-bold text-lg">Salles de Classe Modernes</p><p className="text-slate-300 text-sm">Équipées de tableaux interactifs</p></div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl h-64 group">
+              <img src="/african_primary_library.png" alt="Bibliothèque" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+                <div><p className="text-white font-bold text-lg">Bibliothèque & Médiathèque</p><p className="text-slate-300 text-sm">Plus de 2 000 ouvrages disponibles</p></div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl h-64 group">
+              <img src="/african_primary_banner.png" alt="Terrain de sport" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+                <div><p className="text-white font-bold text-lg">Espaces Sportifs</p><p className="text-slate-300 text-sm">Terrain multisports & gymnase</p></div>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl h-64 group">
+              <img src="/african_primary_activities.png" alt="Cantine" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-end p-6">
+                <div><p className="text-white font-bold text-lg">Cantine & Espace Détente</p><p className="text-slate-300 text-sm">Repas équilibrés chaque jour</p></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
