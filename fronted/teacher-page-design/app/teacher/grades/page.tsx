@@ -42,7 +42,8 @@ function GradesContent() {
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   
   // States
-  const [evalType, setEvalType] = useState<string>('Examen'); // Examen, Contrôle, Devoir
+  const [evalType, setEvalType] = useState<string>('Séquence'); // Séquence, Contrôle, Devoir
+  const [selectedSessionId, setSelectedSessionId] = useState<number>(2); // 2 = Séquence 1, 3 = Séquence 2
   
   // For Examen (Student -> Subjects)
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -74,7 +75,7 @@ function GradesContent() {
       try {
         setFetching(true);
         // Fetch base context (students, subjects, examen grades from Evaluation table)
-        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}?t=${Date.now()}`);
+        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}?session_id=${selectedSessionId}&t=${Date.now()}`);
         if (resCtx.status === 404) {
           const body = await resCtx.json();
           setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
@@ -127,11 +128,11 @@ function GradesContent() {
     };
 
     fetchContext();
-  }, [uid]);
+  }, [uid, selectedSessionId]);
 
   // Load specific assessment grades when selected
   useEffect(() => {
-    if (!uid || !selectedAssessmentId || evalType === 'Examen') return;
+    if (!uid || !selectedAssessmentId || evalType === 'Séquence') return;
 
     const fetchAssessmentGrades = async () => {
       try {
@@ -199,7 +200,7 @@ function GradesContent() {
       const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/student/${selectedStudent.matricule}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, grades: payload })
+        body: JSON.stringify({ uid, grades: payload, session_id: selectedSessionId })
       });
       if (!res.ok) throw new Error('Erreur de sauvegarde');
       setSuccessMsg(`Notes enregistrées pour ${selectedStudent.nom}`);
@@ -262,7 +263,7 @@ function GradesContent() {
           <div className="flex-1">
             <label className="block text-sm font-semibold text-slate-700 mb-2">Type d'évaluation</label>
             <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200 w-max">
-              {['Examen', 'Contrôle', 'Devoir'].map(t => (
+              {['Séquence', 'Contrôle', 'Devoir'].map(t => (
                 <button
                   key={t}
                   onClick={() => {
@@ -282,7 +283,7 @@ function GradesContent() {
             </div>
           </div>
 
-          {evalType !== 'Examen' && (
+          {evalType !== 'Séquence' && (
             <div className="flex-1">
               <label className="block text-sm font-semibold text-slate-700 mb-2">Sélectionnez l'épreuve</label>
               <select 
@@ -294,6 +295,24 @@ function GradesContent() {
                 {filteredAssessments.map(a => (
                   <option key={a.id} value={a.id}>{a.title}</option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {evalType === 'Séquence' && (
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Sélectionnez la Séquence</label>
+              <select 
+                value={selectedSessionId}
+                onChange={e => setSelectedSessionId(Number(e.target.value))}
+                className="w-full max-w-sm h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none font-medium"
+              >
+                <option value={2}>Séquence 1</option>
+                <option value={3}>Séquence 2</option>
+                <option value={4}>Séquence 3</option>
+                <option value={5}>Séquence 4</option>
+                <option value={6}>Séquence 5</option>
+                <option value={7}>Séquence 6</option>
               </select>
             </div>
           )}
@@ -316,8 +335,8 @@ function GradesContent() {
           </div>
         ) : (
           <>
-            {/* EXAMEN VIEW */}
-            {evalType === 'Examen' && (
+            {/* SÉQUENCE VIEW */}
+            {evalType === 'Séquence' && (
               <div className="flex flex-col md:flex-row gap-6 animate-in fade-in">
                 {/* Student List */}
                 <div className="w-full md:w-1/3 flex flex-col gap-4">
@@ -387,7 +406,7 @@ function GradesContent() {
                                 <span className="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">Inactif</span>
                               )}
                             </div>
-                            <p className="text-slate-500 text-sm mt-1">Saisie des notes d'examen par matière (sur 20)</p>
+                            <p className="text-slate-500 text-sm mt-1">Saisie des notes par matière (sur 20) pour la Séquence sélectionnée</p>
                           </div>
                           <Button onClick={saveExamenGrades} disabled={saving || !selectedStudent.actif} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
                             {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sauvegarde...</> : <><Save className="w-4 h-4 mr-2" /> Enregistrer</>}
@@ -423,7 +442,7 @@ function GradesContent() {
             )}
 
             {/* DEVOIR / CONTRÔLE VIEW */}
-            {evalType !== 'Examen' && (
+            {evalType !== 'Séquence' && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in">
                 {!selectedAssessmentId ? (
                   <div className="py-20 flex flex-col items-center justify-center text-slate-400">

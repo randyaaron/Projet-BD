@@ -17,8 +17,11 @@ export function isLegacyDemoMode(): boolean {
 export async function legacyFetch<T = unknown>(url: string, init: RequestInit = {}): Promise<T> {
   const adminId = getLegacyAdminId();
   const headers = new Headers(init.headers || {});
-  if (!headers.has('Content-Type') && init.body) {
+  if (!headers.has('Content-Type') && init.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
+  }
+  if (!headers.has('Accept')) {
+    headers.set('Accept', 'application/json');
   }
   if (adminId) {
     headers.set('X-Admin-Id', adminId);

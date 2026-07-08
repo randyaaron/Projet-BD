@@ -1,0 +1,509 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage[top=2.5cm,bottom=2.5cm,left=2.8cm,right=2.8cm,headheight=15pt]{geometry}
+\usepackage{xcolor,hyperref,titlesec,fancyhdr,booktabs,tabularx,enumitem,tcolorbox,lmodern,microtype,parskip,listings,float}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{primary}{RGB}{30,58,95}
+\definecolor{accent}{RGB}{37,99,235}
+\definecolor{success}{RGB}{22,163,74}
+\definecolor{warning}{RGB}{217,119,6}
+\definecolor{danger}{RGB}{220,38,38}
+\definecolor{codebg}{RGB}{30,30,30}
+\definecolor{codefg}{RGB}{220,220,220}
+
+\lstset{
+  backgroundcolor=\color{codebg},basicstyle=\small\ttfamily\color{codefg},
+  keywordstyle=\color{accent!80},commentstyle=\color{gray!60},
+  stringstyle=\color{success!80},breaklines=true,frame=none,
+  numbers=left,numberstyle=\tiny\color{gray!50},
+  xleftmargin=12pt,aboveskip=6pt,belowskip=6pt
+}
+
+\newtcolorbox{infobox}[1][]{colback=blue!5,colframe=accent,fonttitle=\bfseries,title=#1,left=5pt,right=5pt,top=3pt,bottom=3pt,breakable}
+\newtcolorbox{warnbox}[1][]{colback=orange!8,colframe=warning,fonttitle=\bfseries,title=#1,left=5pt,right=5pt,top=3pt,bottom=3pt,breakable}
+\newtcolorbox{dangerbox}[1][]{colback=red!5,colframe=danger,fonttitle=\bfseries,title=#1,left=5pt,right=5pt,top=3pt,bottom=3pt,breakable}
+\newtcolorbox{tipbox}[1][]{colback=green!5,colframe=success,fonttitle=\bfseries,title=#1,left=5pt,right=5pt,top=3pt,bottom=3pt,breakable}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small\textcolor{primary}{\textbf{École Les Génies}}}
+\fancyhead[R]{\small\textcolor{gray}{Cahier de Maintenance}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\titleformat{\chapter}[display]{\normalfont\Huge\bfseries\color{primary}}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}{\normalfont\Large\bfseries\color{primary}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{accent}}{\thesubsection}{1em}{}
+
+\hypersetup{colorlinks=true,linkcolor=accent,urlcolor=accent,
+  pdftitle={Cahier de Maintenance — Portail Numérique École Les Génies}}
+
+\begin{document}
+
+%% PAGE DE TITRE
+\begin{titlepage}\centering\vspace*{2cm}
+  {\color{primary}\rule{\linewidth}{3pt}}\vspace{0.5cm}
+  {\Huge\bfseries\color{primary}Portail Numérique Scolaire\par}\vspace{0.3cm}
+  {\LARGE\color{gray}École Les Génies\par}\vspace{0.8cm}
+  {\color{primary}\rule{\linewidth}{1.5pt}}\vspace{1cm}
+  {\huge\bfseries Cahier de Maintenance\par}\vspace{0.4cm}
+  {\large Guide technique du responsable informatique\par}\vspace{2cm}
+  \begin{tabular}{ll}\toprule
+    \textbf{Document}   & Cahier de maintenance \\
+    \textbf{Version}    & 1.0 \\
+    \textbf{Date}       & Juillet 2026 \\
+    \textbf{Public}     & Administrateur système / Développeur \\
+    \textbf{Confidentialité} & Strictement interne \\
+  \bottomrule\end{tabular}
+  \vfill{\color{primary}\rule{\linewidth}{3pt}}
+  {\small\color{gray}Document confidentiel — Usage interne uniquement}
+\end{titlepage}
+
+\tableofcontents\clearpage
+
+%% ══════════════════════════════════════════════════
+\chapter*{Introduction}\addcontentsline{toc}{chapter}{Introduction}
+
+Ce document est le \textbf{cahier de maintenance technique} du Portail Numérique de l'École Les Génies. Il est destiné exclusivement au personnel informatique et aux développeurs chargés d'assurer le bon fonctionnement, la mise à jour et la sécurité de la plateforme.
+
+\begin{dangerbox}[Attention : Avertissement]
+Ce document contient des informations sensibles (architecture, accès, procédures d'urgence). Il ne doit jamais être partagé avec des utilisateurs finaux.
+\end{dangerbox}
+
+%% ══════════════════════════════════════════════════
+\chapter{Architecture Technique}
+
+\section{Vue d'ensemble}
+
+L'application est composée de trois couches distinctes :
+
+\begin{center}
+\begin{tabular}{lllll}\toprule
+\textbf{Couche} & \textbf{Technologie} & \textbf{Version} & \textbf{Port} & \textbf{Rôle} \\\midrule
+Frontend principal & Vite / React & 6.x & 5173 & Interface Admin \\
+Portail Enseignant & Next.js & 14+ & 3001 & Interface Enseignant \\
+Portail Parent    & Next.js & 14+ & 3002 & Interface Parent \\
+Backend API       & Laravel & 13.x & 8000 & Serveur REST API \\
+Base de données   & MySQL & 8.x & 3306 & Persistance des données \\
+\bottomrule\end{tabular}
+\end{center}
+
+\section{Arborescence du projet}
+
+\begin{lstlisting}[language=bash]
+projet-BD/
+  backend-app/          # API Laravel (PHP 8.3+)
+    app/Http/Controllers/Legacy/   # Controleurs metier
+    database/migrations/           # Migrations BDD
+    routes/api.php                 # Routes API
+    .env                           # Configuration locale
+  fronted/              # Applications frontend (Node.js)
+    src/                           # Interface Admin (Vite/React)
+    teacher-page-design/           # Portail Enseignant (Next.js)
+    admin-interface-design (2)/    # Portail Parent (Next.js)
+    package.json                   # Scripts de demarrage
+  docs/                 # Documentation (ce fichier)
+\end{lstlisting}
+
+\section{Flux de communication}
+
+\begin{infobox}[Flux général]
+Navigateur → Frontend (Vite/Next.js) → API REST (Laravel, port 8000) → Base de données MySQL (\texttt{ecole2026\_local})
+\end{infobox}
+
+Toutes les requêtes API passent par \texttt{http://localhost:8000/api/legacy/}. Le préfixe \texttt{legacy} indique que l'API s'appuie sur la base de données existante de l'école.
+
+%% ══════════════════════════════════════════════════
+\chapter{Installation et Déploiement}
+
+\section{Prérequis}
+
+\begin{tabularx}{\textwidth}{lXl}\toprule
+\textbf{Logiciel} & \textbf{Rôle} & \textbf{Version min.} \\\midrule
+PHP & Serveur backend Laravel & 8.3+ \\
+Composer & Gestionnaire de paquets PHP & 2.x \\
+Node.js & Exécution du frontend & 18+ \\
+npm & Gestionnaire de paquets JS & 9+ \\
+MySQL & Base de données & 8.x \\
+Git & Contrôle de version & 2.x \\
+\bottomrule\end{tabularx}
+
+\section{Installation initiale}
+
+\subsection{Backend (Laravel)}
+\begin{lstlisting}[language=bash]
+cd projet-BD/backend-app
+
+# 1. Installer les dependances PHP
+composer install
+
+# 2. Copier la configuration
+cp .env.example .env
+
+# 3. Configurer le fichier .env
+nano .env
+# Renseigner : DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+
+# 4. Generer la cle applicative
+php artisan key:generate
+
+# 5. Lancer les migrations
+php artisan migrate
+
+# 6. Demarrer le serveur
+php artisan serve --port=8000
+\end{lstlisting}
+
+\subsection{Frontend (React / Next.js)}
+\begin{lstlisting}[language=bash]
+cd projet-BD/fronted
+
+# 1. Installer les dependances
+npm install
+
+# 2. Builder les portails Next.js (a faire une seule fois)
+npm run build:next
+
+# 3. Lancer tous les serveurs (mode production leger)
+npm run dev
+\end{lstlisting}
+
+\begin{infobox}[Scripts disponibles]
+\begin{itemize}[leftmargin=*,noitemsep]
+  \item \texttt{npm run dev} — Mode production (CPU léger, recommandé au quotidien)
+  \item \texttt{npm run dev:hot} — Mode développement avec hot-reload complet
+  \item \texttt{npm run build:next} — Rebuild des portails Next.js après modification
+  \item \texttt{npm run build} — Build de l'interface admin Vite
+\end{itemize}
+\end{infobox}
+
+\section{Configuration du fichier \texttt{.env}}
+
+\begin{lstlisting}[language=bash]
+APP_NAME="Portail Les Genies"
+APP_ENV=production        # local en developpement
+APP_DEBUG=false           # false en production !
+APP_URL=http://localhost
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ecole2026_local
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe
+
+SESSION_DRIVER=database
+LOG_LEVEL=error           # debug en developpement
+\end{lstlisting}
+
+\begin{dangerbox}[Sécurité]
+Ne jamais mettre \texttt{APP\_DEBUG=true} en production. Cela expose la structure interne du code dans les messages d'erreur.
+\end{dangerbox}
+
+%% ══════════════════════════════════════════════════
+\chapter{Base de Données}
+
+\section{Connexion et informations générales}
+
+\begin{tabularx}{\textwidth}{lX}\toprule
+\textbf{Paramètre} & \textbf{Valeur} \\\midrule
+Système & MySQL 8.x \\
+Base de données & \texttt{ecole2026\_local} \\
+Hôte & \texttt{127.0.0.1} (local) \\
+Port & \texttt{3306} \\
+Encodage & \texttt{utf8mb4} \\
+\bottomrule\end{tabularx}
+
+\section{Tables principales}
+
+\begin{tabularx}{\textwidth}{lX}\toprule
+\textbf{Table} & \textbf{Description} \\\midrule
+\texttt{users} & Comptes utilisateurs (admin, enseignants, parents) \\
+\texttt{people} & Personnes physiques (état civil) \\
+\texttt{teachers} & Enseignants, lien vers \texttt{people} \\
+\texttt{parents} & Parents d'élèves, lien vers \texttt{people} \\
+\texttt{students} & Élèves, lien vers \texttt{people} \\
+\texttt{subjects} & Matières enseignées \\
+\texttt{school\_years} & Années académiques \\
+\texttt{terms} & Trimestres \\
+\texttt{rooms} & Salles de classe \\
+\texttt{classes} & Classes (CP, CE1, etc.) \\
+\texttt{enrollments} & Inscriptions des élèves dans les classes \\
+\texttt{teacher\_class\_assignments} & Affectations titulaires aux classes \\
+\texttt{grades} & Notes des élèves \\
+\texttt{attendances} & Présences et absences \\
+\texttt{disciplines} & Sanctions disciplinaires \\
+\texttt{payments} & Paiements des frais de scolarité \\
+\texttt{messages} & Messages entre admin et parents \\
+\bottomrule\end{tabularx}
+
+\section{Sauvegardes de la base de données}
+
+\subsection{Sauvegarde manuelle}
+\begin{lstlisting}[language=bash]
+# Sauvegarde complete
+mysqldump -u root -p ecole2026_local > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Restauration
+mysql -u root -p ecole2026_local < backup_YYYYMMDD_HHMMSS.sql
+\end{lstlisting}
+
+\subsection{Sauvegarde automatique (cron)}
+\begin{lstlisting}[language=bash]
+# Editer la crontab
+crontab -e
+
+# Ajouter la ligne suivante (sauvegarde quotidienne a 2h00)
+0 2 * * * mysqldump -u root -pMOT_DE_PASSE ecole2026_local \
+  > /backups/ecole_$(date +\%Y\%m\%d).sql
+\end{lstlisting}
+
+\begin{tipbox}[Bonne pratique]
+Conserver les sauvegardes sur un disque externe ou un espace cloud. Tester périodiquement la restauration pour s'assurer de l'intégrité des sauvegardes.
+\end{tipbox}
+
+%% ══════════════════════════════════════════════════
+\chapter{API Backend}
+
+\section{Structure des routes}
+
+Toutes les routes sont définies dans \texttt{backend-app/routes/api.php} sous le préfixe \texttt{/api/legacy/}.
+
+\begin{tabularx}{\textwidth}{llX}\toprule
+\textbf{Méthode} & \textbf{Endpoint} & \textbf{Description} \\\midrule
+POST & \texttt{/auth/login-parent} & Connexion parent \\
+POST & \texttt{/auth/login-teacher} & Connexion enseignant \\
+POST & \texttt{/auth/login-admin} & Connexion administrateur \\
+GET  & \texttt{/parent/dashboard} & Données tableau de bord parent \\
+GET  & \texttt{/parent/notes/\{matricule\}} & Notes d'un élève \\
+GET  & \texttt{/parent/bulletins/\{matricule\}} & Liste des bulletins \\
+GET  & \texttt{/parent/bulletin-detail/\{matricule\}/\{idTrimes\}} & Détail bulletin \\
+GET  & \texttt{/teacher/dashboard} & Données enseignant \\
+GET  & \texttt{/admin/dashboard} & Statistiques admin \\
+GET  & \texttt{/admin/eleves} & Liste des élèves \\
+GET  & \texttt{/admin/paiements} & Liste des paiements \\
+\bottomrule\end{tabularx}
+
+\section{Contrôleurs (Controllers)}
+
+Les contrôleurs sont dans \texttt{app/Http/Controllers/Legacy/} :
+
+\begin{tabularx}{\textwidth}{lX}\toprule
+\textbf{Fichier} & \textbf{Responsabilité} \\\midrule
+\texttt{LegacyAuthController} & Authentification des 3 types d'utilisateurs \\
+\texttt{LegacyParentDashboardController} & Données du portail parent (enfants, notes, bulletins) \\
+\texttt{LegacyTeacherController} & Données du portail enseignant \\
+\texttt{LegacyStudentController} & Gestion des élèves \\
+\texttt{LegacyDashboardController} & Statistiques du tableau de bord admin \\
+\texttt{LegacyPaymentController} & Gestion des paiements et impayés \\
+\texttt{LegacyDisciplineController} & Gestion des sanctions \\
+\texttt{LegacyMessageController} & Messagerie interne \\
+\texttt{LegacyUserController} & Gestion des comptes utilisateurs \\
+\texttt{LegacyStructureController} & Classes, salles, titulaires \\
+\texttt{LegacyCoursController} & Matières et emploi du temps \\
+\bottomrule\end{tabularx}
+
+%% ══════════════════════════════════════════════════
+\chapter{Gestion des Processus et Performances}
+
+\section{Démarrage des serveurs}
+
+\begin{lstlisting}[language=bash]
+# Terminal 1 : Backend Laravel
+cd projet-BD/backend-app
+php artisan serve --port=8000
+
+# Terminal 2 : Frontends (tous les 3 via concurrently)
+cd projet-BD/fronted
+npm run dev
+\end{lstlisting}
+
+\section{Problème de surcharge CPU}
+
+\begin{warnbox}[Symptôme connu : surcharge CPU]
+Si la machine est lente et que \texttt{htop} montre un \textit{Load Average} élevé ($>$ 4), c'est souvent dû à plusieurs serveurs \texttt{next dev} qui tournent simultanément.
+\end{warnbox}
+
+\textbf{Solution immédiate :}
+\begin{lstlisting}[language=bash]
+# Tuer tous les processus Next.js et Vite
+pkill -f "next-server" ; pkill -f "next dev" ; pkill -f "vite"
+
+# Relancer proprement
+cd projet-BD/fronted && npm run dev
+\end{lstlisting}
+
+\textbf{Explication :} Le script \texttt{npm run dev} utilise désormais \texttt{next start} (mode production, $\sim$1\% CPU) au lieu de \texttt{next dev} (mode développement, $\sim$30--50\% CPU par serveur). Si des modifications sont apportées aux portails Next.js, il faut rebuilder avant de relancer :
+
+\begin{lstlisting}[language=bash]
+npm run build:next   # Rebuild les portails
+npm run dev          # Relancer
+\end{lstlisting}
+
+\section{Vérification de l'état des services}
+
+\begin{lstlisting}[language=bash]
+# Verifier les processus actifs
+ps aux | grep -E "artisan|next|vite" | grep -v grep
+
+# Verifier les ports utilises
+ss -tlnp | grep -E "5173|3001|3002|8000"
+
+# Verifier la connexion a la base de donnees
+mysql -u root -p -e "SHOW DATABASES;" | grep ecole
+\end{lstlisting}
+
+%% ══════════════════════════════════════════════════
+\chapter{Sécurité}
+
+\section{Authentification}
+
+\begin{itemize}[leftmargin=*]
+  \item Les mots de passe sont hachés avec \textbf{bcrypt} (12 rounds) via Laravel.
+  \item L'espace administrateur est protégé par un \textbf{code d'accès préalable} avant la saisie des identifiants.
+  \item Les sessions utilisateurs sont gérées côté backend via \texttt{localStorage} (token JWT ou identifiant de session).
+\end{itemize}
+
+\section{Gestion des rôles}
+
+\begin{tabularx}{\textwidth}{lX}\toprule
+\textbf{Rôle} & \textbf{Accès autorisés} \\\midrule
+\texttt{directeur} / \texttt{administration} & Tout le module académique, élèves, pédagogie, suivi \\
+\texttt{fondateur} & Idem directeur + gestion utilisateurs + configuration \\
+\texttt{intendant} & Tableau de bord, paiements, impayés, configuration \\
+\texttt{root} & Gestion utilisateurs, configuration système \\
+\texttt{enseignant} & Portail enseignant uniquement (port 3001) \\
+\texttt{parent} & Portail parent uniquement (port 3002) \\
+\bottomrule\end{tabularx}
+
+\begin{dangerbox}[Compte Root]
+Le compte \texttt{root} a accès à la gestion des utilisateurs et à la configuration système. Son mot de passe doit être unique, complexe ($\geq$ 16 caractères) et connu d'une seule personne de confiance.
+\end{dangerbox}
+
+\section{Recommandations de sécurité}
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Sauvegardes chiffrées} : Chiffrer les dumps MySQL avec GPG avant stockage distant.
+  \item \textbf{HTTPS} : En production, utiliser un reverse proxy (Nginx) avec certificat SSL.
+  \item \textbf{Mises à jour} : Maintenir Laravel et Node.js à jour pour les correctifs de sécurité.
+  \item \textbf{Logs} : Surveiller \texttt{backend-app/storage/logs/laravel.log} régulièrement.
+  \item \textbf{Firewall} : En production, n'exposer que les ports nécessaires (80/443).
+\end{enumerate}
+
+%% ══════════════════════════════════════════════════
+\chapter{Procédures de Maintenance Courante}
+
+\section{Mise à jour des dépendances}
+
+\subsection{Backend (PHP/Laravel)}
+\begin{lstlisting}[language=bash]
+cd backend-app
+composer update                   # Met a jour les paquets PHP
+php artisan migrate               # Applique les nouvelles migrations
+php artisan config:cache          # Vide le cache de configuration
+php artisan route:cache           # Vide le cache des routes
+\end{lstlisting}
+
+\subsection{Frontend (Node.js)}
+\begin{lstlisting}[language=bash]
+cd fronted
+npm update                        # Met a jour les paquets JS
+npm run build:next                # Rebuild si paquets Next.js modifies
+\end{lstlisting}
+
+\section{Réinitialisation du mot de passe d'un utilisateur}
+
+Via l'interface (recommandé) : Menu \textbf{Utilisateurs} → sélectionner l'utilisateur → \textbf{Réinitialiser MDP}.
+
+Via la base de données (en cas d'urgence) :
+\begin{lstlisting}[language=bash]
+# Generer un hash bcrypt (depuis la console Laravel)
+cd backend-app
+php artisan tinker
+>>> Hash::make('NouveauMotDePasse123!')
+
+# Appliquer dans la BDD
+mysql -u root -p ecole2026_local -e \
+  "UPDATE users SET password='HASH_GENERE' WHERE username='identifiant';"
+\end{lstlisting}
+
+\section{Ajout d'un nouvel enseignant ou parent}
+
+\begin{enumerate}[leftmargin=*]
+  \item Se connecter en tant qu'admin (Fondateur ou Root).
+  \item Aller dans \textbf{Utilisateurs} → \textbf{Nouvel utilisateur}.
+  \item Choisir le rôle (Enseignant ou Parent), remplir les informations.
+  \item Communiquer le mot de passe temporaire généré à l'utilisateur.
+  \item L'utilisateur se connecte et doit changer son mot de passe.
+\end{enumerate}
+
+\section{Gestion des logs Laravel}
+
+\begin{lstlisting}[language=bash]
+# Consulter les derniers logs
+tail -100 backend-app/storage/logs/laravel.log
+
+# Vider les logs (si trop volumineux)
+> backend-app/storage/logs/laravel.log
+\end{lstlisting}
+
+%% ══════════════════════════════════════════════════
+\chapter{Résolution de Problèmes Fréquents}
+
+\begin{tabularx}{\textwidth}{lXl}\toprule
+\textbf{Problème} & \textbf{Cause probable} & \textbf{Solution} \\\midrule
+API répond 500 & Erreur PHP / table manquante & Vérifier \texttt{laravel.log} \\
+\addlinespace
+Page blanche sur le portail & Serveur frontend arrêté & Relancer \texttt{npm run dev} \\
+\addlinespace
+Connexion refusée (port 8000) & Serveur Laravel arrêté & Relancer \texttt{php artisan serve} \\
+\addlinespace
+Machine lente / CPU $>$ 80\% & Trop de serveurs \texttt{next dev} & \texttt{pkill -f next-server} puis \texttt{npm run dev} \\
+\addlinespace
+Erreur ``Table not found'' & Migration non appliquée & \texttt{php artisan migrate} \\
+\addlinespace
+Erreur CORS & URL backend incorrecte & Vérifier \texttt{VITE\_API\_URL} dans \texttt{.env} frontend \\
+\addlinespace
+Bulletin vide & Pas de notes saisies & Vérifier les notes dans le module Notes \& Moyennes \\
+\addlinespace
+Login impossible & MDP incorrect ou BDD hors ligne & Vérifier BDD + reset MDP si nécessaire \\
+\bottomrule\end{tabularx}
+
+\section{Logs et débogage}
+
+\begin{lstlisting}[language=bash]
+# Logs Laravel (backend)
+tail -f backend-app/storage/logs/laravel.log
+
+# Logs Node.js (frontend) - visibles dans le terminal de demarrage
+npm run dev  # Les erreurs s'affichent directement
+
+# Mode debug Laravel (developpement uniquement)
+# Dans .env : APP_DEBUG=true, puis :
+php artisan config:clear
+\end{lstlisting}
+
+%% ══════════════════════════════════════════════════
+\chapter{Contacts et Responsabilités}
+
+\begin{tabularx}{\textwidth}{llX}\toprule
+\textbf{Rôle} & \textbf{Contact} & \textbf{Responsabilité} \\\midrule
+Développeur principal & dev@lesgenies.cm & Maintenance code, déploiements \\
+Administrateur BDD & dba@lesgenies.cm & Sauvegardes, intégrité données \\
+Direction           & direction@lesgenies.cm & Validation des mises à jour majeures \\
+\bottomrule\end{tabularx}
+
+\vspace{1cm}
+\begin{tipbox}[En cas d'urgence]
+Si l'application est totalement inaccessible, la procédure est : (1) vérifier que MySQL tourne, (2) redémarrer les serveurs avec \texttt{pkill -f "next-server" \&\& pkill -f vite \&\& pkill -f artisan}, puis relancer le backend et le frontend.
+\end{tipbox}
+
+\vfill
+\begin{center}
+  \color{gray}\small\textit{École Les Génies — Portail Numérique v1.0 — Juillet 2026}\\
+  \textit{Document de maintenance — Diffusion strictement restreinte}
+\end{center}
+
+\end{document}

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
-import { 
+import {
   Check,
   X,
   Clock,
@@ -33,10 +33,10 @@ function AbsencesContent() {
   const searchParams = useSearchParams();
   const [students, setStudents] = useState<Student[]>([]);
   const [attendances, setAttendances] = useState<Attendance[]>([]);
-  
+
   const [fetching, setFetching] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
-  
+
   // Date du jour par défaut
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [uid, setUid] = useState<string | null>(null);
@@ -50,7 +50,7 @@ function AbsencesContent() {
       userId = localStorage.getItem('user_id');
     }
     setUid(userId);
-    
+
     if (userId && typeof window !== 'undefined') {
       localStorage.setItem('user_id', userId);
     }
@@ -69,7 +69,7 @@ function AbsencesContent() {
           return;
         }
         if (!res.ok) throw new Error('Erreur lors du chargement des données.');
-        
+
         const data = await res.json();
         if (data.error) {
           setErrorMsg(data.error);
@@ -91,7 +91,7 @@ function AbsencesContent() {
 
   const handleStatusChange = async (matricule: number, newStatus: 'PRESENT' | 'ABSENT' | 'LATE') => {
     if (!uid) return;
-    
+
     setLoadingMap(prev => ({ ...prev, [matricule]: true }));
 
     try {
@@ -102,7 +102,7 @@ function AbsencesContent() {
       });
 
       if (!res.ok) throw new Error('Erreur de sauvegarde');
-      
+
       // Update local state immediately
       setAttendances(prev => {
         const filtered = prev.filter(a => !(a.student_id === matricule && a.date === selectedDate));
@@ -128,13 +128,13 @@ function AbsencesContent() {
 
   return (
     <main className="min-h-screen bg-slate-50/50 pb-10">
-      <TeacherHeader 
-        title="Appel et Présences" 
+      <TeacherHeader
+        title="Appel et Présences"
         subtitle="Signaler les absences et les retards"
       />
-      
+
       <div className="p-6 max-w-5xl mx-auto">
-        
+
         {/* Date Selector & Stats */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -143,15 +143,15 @@ function AbsencesContent() {
             </div>
             <div>
               <p className="text-sm text-slate-500 font-medium">Date de l'appel</p>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="mt-1 font-bold text-slate-900 border-none p-0 focus:ring-0 cursor-pointer bg-transparent"
               />
             </div>
           </div>
-          
+
           <div className="flex gap-4 sm:gap-8">
             <div className="text-center">
               <p className="text-sm text-slate-500">Effectif</p>
@@ -178,7 +178,6 @@ function AbsencesContent() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
             <h2 className="font-bold text-slate-700">Liste des élèves</h2>
-            <p className="text-xs text-slate-500 italic">L'enregistrement est automatique lors du clic</p>
           </div>
 
           {fetching ? (
@@ -225,8 +224,8 @@ function AbsencesContent() {
                             onClick={() => handleStatusChange(student.matricule, 'PRESENT')}
                             className={cn(
                               "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                              status === 'PRESENT' 
-                                ? "bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-200" 
+                              status === 'PRESENT'
+                                ? "bg-white text-emerald-700 shadow-sm ring-1 ring-emerald-200"
                                 : "text-slate-500 hover:text-slate-700"
                             )}
                           >
@@ -237,8 +236,8 @@ function AbsencesContent() {
                             onClick={() => handleStatusChange(student.matricule, 'ABSENT')}
                             className={cn(
                               "flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                              status === 'ABSENT' 
-                                ? "bg-white text-rose-700 shadow-sm ring-1 ring-rose-200" 
+                              status === 'ABSENT'
+                                ? "bg-white text-rose-700 shadow-sm ring-1 ring-rose-200"
                                 : "text-slate-500 hover:text-slate-700"
                             )}
                           >

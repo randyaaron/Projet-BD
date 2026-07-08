@@ -29,6 +29,21 @@ class LegacyParentDashboardController extends Controller
                 ->where('matricule', $child->matricule)
                 ->avg('note');
 
+            // Récupérer le nom du titulaire
+            $teacher = null;
+            if (isset($child->idClasse)) {
+                $titulaire = DB::table('Titulaire')
+                    ->join('Personne', 'Titulaire.idPers', '=', 'Personne.idPers')
+                    ->join('Salle', 'Titulaire.idSalle', '=', 'Salle.idSalle')
+                    ->where('Salle.idClasse', $child->idClasse)
+                    ->where('Titulaire.actif', 1)
+                    ->select('Personne.nom', 'Personne.prenom')
+                    ->first();
+                if ($titulaire) {
+                    $teacher = trim($titulaire->nom . ' ' . $titulaire->prenom);
+                }
+            }
+
             $children[] = [
                 'id'       => (string) $child->matricule,
                 'name'     => $child->nom . ' ' . $child->prenom,
@@ -36,6 +51,7 @@ class LegacyParentDashboardController extends Controller
                 'prenom'   => $child->prenom,
                 'class'    => $child->classe ?? 'Non assigné',
                 'idClasse' => $child->idClasse ?? null,
+                'teacher'  => $teacher ?: 'Non assigné',
                 'average'  => $avg ? round($avg, 2) : 0,
                 'status'   => ($avg >= 15) ? 'excellent' : (($avg >= 10) ? 'good' : 'needs-attention'),
             ];
@@ -85,8 +101,9 @@ class LegacyParentDashboardController extends Controller
             $matricule = $child['id'];
 
             // Récupérer les évaluations groupées par cours
-            $evals = DB::table('Evaluation')
+            $query = DB::table('Evaluation')
                 ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+                ->join('Session', 'Evaluation.idSession', '=', 'Session.idSession')
                 ->leftJoin('Personne', 'Evaluation.idPers', '=', 'Personne.idPers')
                 ->where('Evaluation.matricule', $matricule)
                 ->select(
@@ -96,7 +113,13 @@ class LegacyParentDashboardController extends Controller
                     'Evaluation.appreciation',
                     'Personne.nom as teacherNom',
                     'Evaluation.created_at'
-                )
+                );
+
+            if ($request->has('term_id') && $request->input('term_id') !== '') {
+                $query->where('Session.idTrimestre', $request->input('term_id'));
+            }
+
+            $evals = $query
                 ->orderBy('Cours.libelle')
                 ->orderBy('Evaluation.created_at', 'desc')
                 ->get();
@@ -208,6 +231,25 @@ class LegacyParentDashboardController extends Controller
                     'trimestre'    => $t->libelle ?? 'Trimestre',
                     'annee'        => date('Y') . '-' . (date('Y') + 1),
                     'average'      => $avg,
+                    'status'       => 'available',
+                    'date'         => date('Y-m-d'),
+                    'totalMatières'=> DB::table('Evaluation')->where('matricule', $child['id'])->distinct('idCours')->count('idCours'),
+                ];
+            }
+            
+            // Calcul du Bulletin Annuel (moyenne de toutes les notes)
+            $allNotes = DB::table('Evaluation')
+                ->where('matricule', $child['id'])
+                ->pluck('note');
+
+            if (!$allNotes->isEmpty()) {
+                $avgAnnuel = round($allNotes->average(), 2);
+                $bulletins[] = [
+                    'id'           => $child['id'] . '_annuel',
+                    'child'        => $child,
+                    'trimestre'    => 'Bulletin Annuel',
+                    'annee'        => date('Y') . '-' . (date('Y') + 1),
+                    'average'      => $avgAnnuel,
                     'status'       => 'available',
                     'date'         => date('Y-m-d'),
                     'totalMatières'=> DB::table('Evaluation')->where('matricule', $child['id'])->distinct('idCours')->count('idCours'),

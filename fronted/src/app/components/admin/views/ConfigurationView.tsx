@@ -111,11 +111,9 @@ export function ConfigurationView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Nom de l'école</label>
-                      <input 
-                        value={formData.schoolName}
-                        onChange={e => setFormData({...formData, schoolName: e.target.value})}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400" 
-                      />
+                      <div className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white font-bold uppercase">
+                        Les Genies
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Année académique en cours</label>

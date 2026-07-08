@@ -101,14 +101,6 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium text-slate-700">Matière enseignée</label>
-                  <Input 
-                    defaultValue="Mathématiques" 
-                    className="mt-1 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20"
-                    disabled
-                  />
-                </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -194,16 +186,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Danger Zone */}
-          <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-            <h2 className="text-lg font-semibold text-rose-900">Zone dangereuse</h2>
-            <p className="mt-1 text-sm text-rose-700">Ces actions sont irréversibles</p>
-            <div className="mt-4 flex gap-3">
-              <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100">
-                Désactiver mon compte
-              </Button>
-            </div>
-          </div>
+
         </div>
       </div>
     </main>

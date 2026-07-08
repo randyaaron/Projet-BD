@@ -61,6 +61,7 @@ export function TeacherSidebar() {
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-white">Les Genies</span>
                 <span className="text-xs text-emerald-300">Espace Enseignant</span>
+                <span className="text-[10px] font-bold text-emerald-100 bg-emerald-800/50 w-fit px-1.5 py-0.5 rounded mt-0.5">2025/2026</span>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { TeacherHeader } from '@/components/teacher/teacher-header';
 import { cn } from '@/lib/utils';
 import {
@@ -13,7 +13,10 @@ import {
   CalendarDays,
   FileText,
   Loader2,
-  X
+  X,
+  UploadCloud,
+  Paperclip,
+  Trash2
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -41,6 +44,11 @@ function HomeworkContent() {
 
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [terms, setTerms] = useState<{idTrimes: number, libelle: string}[]>([
+    {idTrimes: 1, libelle: '1er Trimestre'},
+    {idTrimes: 2, libelle: '2ème Trimestre'},
+    {idTrimes: 3, libelle: '3ème Trimestre'}
+  ]);
 
   const [fetching, setFetching] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -54,8 +62,31 @@ function HomeworkContent() {
     type: 'Devoir',
     total_points: '20',
     date: new Date().toISOString().split('T')[0],
+    term_id: '',
     duration: '' // Kept for UI completeness, backend ignores it
   });
+
+  // Drag & Drop file state
+  const [droppedFile, setDroppedFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+  const handleDragLeave = () => setIsDragOver(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) setDroppedFile(file);
+  };
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setDroppedFile(file);
+  };
+  const ALLOWED_TYPES = ['application/pdf', 'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg', 'image/png'];
+  const isValidFile = droppedFile ? ALLOWED_TYPES.includes(droppedFile.type) : true;
 
   useEffect(() => {
     let userId = searchParams.get('userId');
@@ -87,6 +118,7 @@ function HomeworkContent() {
 
         setSubjects(data.subjects || []);
         setAssessments(data.assessments || []);
+
       } catch (err) {
         console.error(err);
         setErrorMsg('Impossible de charger les données.');
@@ -98,9 +130,16 @@ function HomeworkContent() {
     fetchContext();
   }, [uid]);
 
+  const getSequencesForTerm = (termId: string) => {
+    if (termId === '1') return ['Séquence 1', 'Séquence 2'];
+    if (termId === '2') return ['Séquence 3', 'Séquence 4'];
+    if (termId === '3') return ['Séquence 5', 'Séquence 6'];
+    return ['Séquence 1', 'Séquence 2', 'Séquence 3', 'Séquence 4', 'Séquence 5', 'Séquence 6'];
+  };
+
   const handleCreate = async () => {
     if (!uid) return;
-    if (!newAss.title || !newAss.subject_id || !newAss.date) {
+    if (!newAss.title || !newAss.subject_id || !newAss.date || !newAss.term_id) {
       alert('Veuillez remplir tous les champs obligatoires.');
       return;
     }
@@ -128,7 +167,7 @@ function HomeworkContent() {
       }, ...prev]);
 
       setShowModal(false);
-      setNewAss({ title: '', subject_id: '', type: 'Devoir', total_points: '20', date: new Date().toISOString().split('T')[0], duration: '' });
+      setNewAss({ title: '', subject_id: '', type: 'Devoir', total_points: '20', date: new Date().toISOString().split('T')[0], term_id: '', duration: '' });
     } catch (err) {
       console.error(err);
       alert('Erreur lors de la création.');
@@ -246,33 +285,55 @@ function HomeworkContent() {
                         <div className="font-semibold text-slate-700">/ {ass.total_points}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <select
-                          value={ass.status || (ass.type === 'Devoir' ? 'en cours' : 'planifiée')}
-                          onChange={async (e) => {
-                            const newStatus = e.target.value;
-                            try {
-                              const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${ass.id}/status`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ status: newStatus })
-                              });
-                              if (res.ok) {
-                                setAssessments(prev => prev.map(a => a.id === ass.id ? { ...a, status: newStatus } : a));
-                              }
-                            } catch (err) {
-                              console.error(err);
-                            }
-                          }}
-                          className={cn("text-xs font-semibold rounded-md px-2 py-1 border outline-none cursor-pointer",
-                            (ass.status || 'planifiée') === 'planifiée' ? 'bg-slate-50 text-slate-700 border-slate-200' :
-                            (ass.status || 'planifiée') === 'en cours' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                            'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          )}
-                        >
-                          {ass.type !== 'Devoir' && <option value="planifiée">Planifiée</option>}
-                          <option value="en cours">En cours</option>
-                          <option value="corrigée">Corrigée</option>
-                        </select>
+                        {(() => {
+                          const isCorrigee = (ass.status === 'corrigée' || ass.status === 'corrigé');
+                          let derivedStatus = 'planifiée';
+                          
+                          if (isCorrigee) {
+                            derivedStatus = 'corrigée';
+                          } else if (ass.date) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const assDate = new Date(ass.date);
+                            assDate.setHours(0, 0, 0, 0);
+                            if (assDate <= today) derivedStatus = 'en cours';
+                          }
+
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className={cn("px-2.5 py-1 rounded-md text-xs font-semibold border", 
+                                derivedStatus === 'planifiée' ? 'bg-slate-50 text-slate-700 border-slate-200' :
+                                derivedStatus === 'en cours' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              )}>
+                                {derivedStatus.charAt(0).toUpperCase() + derivedStatus.slice(1)}
+                              </span>
+                              
+                              {derivedStatus === 'en cours' && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${ass.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: 'corrigée' })
+                                      });
+                                      if (res.ok) {
+                                        setAssessments(prev => prev.map(a => a.id === ass.id ? { ...a, status: 'corrigée' } : a));
+                                      }
+                                    } catch (err) {
+                                      console.error(err);
+                                    }
+                                  }}
+                                  title="Marquer comme corrigée"
+                                  className="p-1 text-slate-400 hover:text-emerald-600 transition-colors"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   ))
@@ -296,13 +357,28 @@ function HomeworkContent() {
 
             <div className="p-6 space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Titre de l'épreuve *</label>
-                <Input
-                  placeholder="Ex : Devoir de Mathématiques N°2"
-                  value={newAss.title}
-                  onChange={e => setNewAss({ ...newAss, title: e.target.value })}
-                  className="bg-slate-50 border-slate-200"
-                />
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  {newAss.type === 'Examen' ? 'Séquence *' : 'Titre de l\'épreuve *'}
+                </label>
+                {newAss.type === 'Examen' ? (
+                  <select
+                    value={newAss.title}
+                    onChange={e => setNewAss({ ...newAss, title: e.target.value })}
+                    className="w-full h-10 px-3 rounded-md border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">Sélectionner une séquence...</option>
+                    {getSequencesForTerm(newAss.term_id).map(seq => (
+                      <option key={seq} value={seq}>{seq}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    placeholder="Ex : Devoir de Mathématiques N°2"
+                    value={newAss.title}
+                    onChange={e => setNewAss({ ...newAss, title: e.target.value })}
+                    className="bg-slate-50 border-slate-200"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -334,6 +410,28 @@ function HomeworkContent() {
                     <option value="Devoir">Devoir</option>
                     <option value="Contrôle">Contrôle</option>
                     <option value="Examen">Examen</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Trimestre *</label>
+                  <select
+                    value={newAss.term_id}
+                    onChange={e => {
+                      const newTerm = e.target.value;
+                      // If type is Examen and current title is not in the new term's sequences, clear it
+                      let newTitle = newAss.title;
+                      if (newAss.type === 'Examen' && newTerm) {
+                        const validSeqs = getSequencesForTerm(newTerm);
+                        if (!validSeqs.includes(newTitle)) {
+                          newTitle = '';
+                        }
+                      }
+                      setNewAss({ ...newAss, term_id: newTerm, title: newTitle });
+                    }}
+                    className="w-full h-10 px-3 rounded-md border border-slate-200 bg-slate-50 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">Sélectionner...</option>
+                    {terms.map(t => <option key={t.idTrimes} value={t.idTrimes}>{t.libelle}</option>)}
                   </select>
                 </div>
               </div>
@@ -372,6 +470,68 @@ function HomeworkContent() {
                   onChange={e => setNewAss({ ...newAss, total_points: e.target.value })}
                   className="bg-slate-50 border-slate-200 w-1/3"
                 />
+              </div>
+
+              {/* Drag & Drop Zone */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                  <Paperclip className="w-4 h-4" /> Fichier de l'épreuve (optionnel)
+                </label>
+                {!droppedFile ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      'border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all',
+                      isDragOver
+                        ? 'border-blue-400 bg-blue-50 scale-[1.01]'
+                        : 'border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50'
+                    )}
+                  >
+                    <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
+                      isDragOver ? 'bg-blue-100' : 'bg-white border border-slate-200'
+                    )}>
+                      <UploadCloud className={cn('w-6 h-6 transition-colors', isDragOver ? 'text-blue-600' : 'text-slate-400')} />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-slate-700">Glissez votre fichier ici</p>
+                      <p className="text-xs text-slate-400 mt-1">ou cliquez pour parcourir</p>
+                      <p className="text-xs text-slate-400 mt-0.5">PDF, Word, JPG, PNG</p>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={handleFileInput}
+                    />
+                  </div>
+                ) : (
+                  <div className={cn(
+                    'border rounded-xl p-4 flex items-center gap-3',
+                    isValidFile ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'
+                  )}>
+                    <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                      isValidFile ? 'bg-emerald-100' : 'bg-red-100'
+                    )}>
+                      <FileText className={cn('w-5 h-5', isValidFile ? 'text-emerald-600' : 'text-red-600')} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{droppedFile.name}</p>
+                      <p className="text-xs text-slate-500">{(droppedFile.size / 1024).toFixed(1)} KB</p>
+                      {!isValidFile && <p className="text-xs text-red-600 font-semibold mt-0.5">Format non supporté</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setDroppedFile(null)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>

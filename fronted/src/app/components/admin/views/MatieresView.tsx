@@ -72,7 +72,7 @@ export function MatieresView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-slate-900" style={{ fontSize: '1.375rem', fontWeight: 700 }}>Cours & Matières</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{cours.length} cours · {uniqueCours.length} matières distinctes · depuis la base de données</p>
+          <p className="text-slate-500 text-sm mt-0.5">{cours.length} cours · {uniqueCours.length} matières distinctes</p>
         </div>
         <button onClick={() => { setShowModal(true); setError(''); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors shadow-sm" style={{ fontWeight: 600 }}>
           <Plus className="w-4 h-4" /> Nouveau cours

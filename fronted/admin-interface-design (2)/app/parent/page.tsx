@@ -170,7 +170,12 @@ function ParentDashboardContent() {
                         <h3 className="text-lg font-semibold text-slate-900">{child.name}</h3>
                         <Badge className={status.className}>{status.label}</Badge>
                       </div>
-                      <p className="text-sm text-slate-500 mt-1">{child.class}</p>
+                      <div className="flex flex-col gap-1 mt-1">
+                        <p className="text-sm text-slate-500 font-medium">{child.class}</p>
+                        <p className="text-xs text-slate-400 bg-slate-50 border border-slate-100 rounded-md px-2 py-1 w-max">
+                          👨‍🏫 Titulaire : <span className="font-semibold text-slate-600">{child.teacher}</span>
+                        </p>
+                      </div>
                       <div className="mt-4 grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
@@ -213,161 +218,112 @@ function ParentDashboardContent() {
           </div>
         </div>
 
-        {/* Grille principale */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne gauche - Paiements et Messages */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Paiements */}
-            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between p-5 bg-gradient-to-r from-amber-500 to-amber-600">
+        {/* Grille principale remaniée */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Section Paiements (plus compacte) */}
+          <div className="lg:col-span-8 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col">
+             <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
-                    <CreditCard className="h-5 w-5 text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Paiements</h3>
-                    <p className="text-sm text-amber-100">Frais de scolarité</p>
+                    <h3 className="font-bold text-slate-900">Suivi Financier</h3>
+                    <p className="text-xs text-slate-500">Paiements et scolarité</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-amber-100">Total dû</p>
-                  <p className="text-2xl font-bold text-white">{totalDue.toLocaleString()} FCFA</p>
+                  <p className="text-xs text-slate-500 font-medium">Total à régler</p>
+                  <p className="text-xl font-black text-amber-600">{totalDue.toLocaleString()} FCFA</p>
                 </div>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {payments.map((payment) => {
-                  const config = paymentStatusConfig[payment.status]
-                  const StatusIcon = config.icon
-                  return (
-                    <div key={payment.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <StatusIcon className={`h-5 w-5 ${config.iconClass}`} />
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{payment.label}</p>
-                          <p className="text-xs text-slate-500">Échéance: {payment.dueDate}</p>
+             </div>
+             
+             <div className="flex-1 p-5">
+               {payments.length === 0 ? (
+                 <div className="h-full flex flex-col items-center justify-center text-slate-400 py-8">
+                    <CheckCircle className="w-10 h-10 text-emerald-300 mb-2" />
+                    <p className="font-medium text-slate-600">Aucun paiement en attente</p>
+                    <p className="text-xs">Vous êtes à jour dans vos règlements.</p>
+                 </div>
+               ) : (
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {payments.slice(0, 4).map((payment: any) => {
+                      const config = paymentStatusConfig[payment.status]
+                      const StatusIcon = config.icon
+                      return (
+                        <div key={payment.id} className="p-4 rounded-xl border border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm transition-all flex items-center justify-between">
+                           <div>
+                             <p className="text-sm font-bold text-slate-800">{payment.label}</p>
+                             <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                               <Clock className="w-3 h-3" /> {payment.dueDate}
+                             </p>
+                           </div>
+                           <div className="text-right">
+                             <p className="text-sm font-black text-slate-900">{payment.amount.toLocaleString()}</p>
+                             <Badge className={config.className + " mt-1 scale-90 origin-right"}>{config.label}</Badge>
+                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm font-semibold text-slate-900">{payment.amount.toLocaleString()} FCFA</p>
-                        <Badge className={config.className}>{config.label}</Badge>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="p-4 border-t border-slate-100 bg-slate-50">
-                <Button asChild className="w-full bg-amber-500 hover:bg-amber-600 text-white">
-                  <Link href="/parent/paiements">Voir tous les paiements</Link>
-                </Button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between p-5 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                    <MessageSquare className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Messages</h3>
-                    <p className="text-sm text-slate-500">{unreadMessages} non lus</p>
-                  </div>
-                </div>
-                <Button asChild variant="outline" size="sm" className="border-amber-200 text-amber-700 hover:bg-amber-50">
-                  <Link href="/parent/messages">Voir tout</Link>
-                </Button>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {messages.map((message) => (
-                  <div key={message.id} className={`flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors cursor-pointer ${message.unread ? 'bg-amber-50/50' : ''}`}>
-                    <Avatar className="h-10 w-10 border border-slate-200">
-                      <AvatarFallback className="bg-slate-100 text-slate-600 text-sm">
-                        {message.sender.name.split(" ").map(n => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-slate-900">{message.sender.name}</p>
-                          {message.unread && <span className="h-2 w-2 rounded-full bg-amber-500" />}
-                        </div>
-                        <p className="text-xs text-slate-500">{message.date}</p>
-                      </div>
-                      <p className="text-sm text-slate-500">{message.sender.role}</p>
-                      <p className="text-sm font-medium text-slate-900 mt-1">{message.subject}</p>
-                      <p className="text-sm text-slate-500 truncate">{message.preview}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      )
+                    })}
+                 </div>
+               )}
+             </div>
+             <div className="p-3 border-t border-slate-100 bg-slate-50">
+               <Button asChild variant="ghost" className="w-full text-amber-600 hover:bg-amber-100">
+                 <Link href="/parent/paiements">Historique complet des paiements</Link>
+               </Button>
+             </div>
           </div>
 
-          {/* Colonne droite - Événements */}
-          <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between p-5 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                    <Calendar className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Événements à venir</h3>
-                    <p className="text-sm text-slate-500">{events.length} prochains</p>
-                  </div>
+          {/* Section Messages (colonne droite) */}
+          <div className="lg:col-span-4 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col">
+            <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5" />
                 </div>
-              </div>
-              <div className="divide-y divide-slate-100">
-                {events.map((event) => {
-                  const config = eventTypeConfig[event.type]
-                  const EventIcon = config.icon
-                  return (
-                    <div key={event.id} className="flex items-start gap-3 p-4 hover:bg-slate-50 transition-colors">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${config.className}`}>
-                        <EventIcon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">{event.title}</p>
-                        <p className="text-xs text-slate-500 mt-1">{event.date} • {event.time}</p>
-                        {event.location && (
-                          <p className="text-xs text-slate-400 mt-0.5">{event.location}</p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                <div>
+                  <h3 className="font-bold text-slate-900">Messagerie</h3>
+                  <p className="text-xs text-slate-500">{unreadMessages} message(s) non lu(s)</p>
+                </div>
               </div>
             </div>
-
-            {/* Rapports de discipline */}
-            <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between p-5 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Discipline</h3>
-                    <p className="text-sm text-slate-500">Lucas Dupont</p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                    <AlertCircle className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <Badge className="bg-amber-100 text-amber-700">Observation</Badge>
-                      <p className="text-xs text-slate-500">10 Jan 2026</p>
-                    </div>
-                    <p className="text-sm font-medium text-slate-900 mt-2">Bavardage en classe</p>
-                    <p className="text-xs text-slate-500 mt-1">Par Mme Martin</p>
-                  </div>
-                </div>
-              </div>
+            
+            <div className="flex-1 overflow-y-auto max-h-[350px]">
+               {messages.length === 0 ? (
+                 <div className="flex flex-col items-center justify-center text-slate-400 py-12">
+                   <MessageSquare className="w-10 h-10 text-slate-200 mb-2" />
+                   <p className="text-sm">Boîte de réception vide</p>
+                 </div>
+               ) : (
+                 <div className="divide-y divide-slate-50">
+                   {messages.map((message: any) => (
+                     <div key={message.id} className={`p-4 hover:bg-slate-50 transition-colors cursor-pointer ${message.unread ? 'bg-blue-50/30' : ''}`}>
+                       <div className="flex items-start gap-3">
+                         <Avatar className="h-9 w-9 border border-slate-200 shrink-0">
+                           <AvatarFallback className="bg-slate-100 text-slate-600 text-xs font-bold">
+                             {message.sender.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                           </AvatarFallback>
+                         </Avatar>
+                         <div className="flex-1 min-w-0">
+                           <div className="flex items-center justify-between gap-2">
+                             <p className="text-sm font-bold text-slate-800 truncate">{message.sender.name}</p>
+                             <p className="text-[10px] font-medium text-slate-400 shrink-0">{message.date}</p>
+                           </div>
+                           <p className="text-xs font-semibold text-slate-900 mt-0.5 truncate">{message.subject}</p>
+                           <p className="text-xs text-slate-500 truncate mt-1">{message.preview}</p>
+                         </div>
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               )}
+            </div>
+            <div className="p-3 border-t border-slate-100 bg-slate-50">
+              <Button asChild variant="ghost" className="w-full text-blue-600 hover:bg-blue-100">
+                 <Link href="/parent/messages">Ouvrir la messagerie</Link>
+              </Button>
             </div>
           </div>
         </div>

@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, UserCheck, Users, UserPlus, X, Loader2, Eye, EyeOff, Search } from 'lucide-react';
+import { Shield, UserCheck, Users, UserPlus, X, Loader2, Eye, EyeOff, Search, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
 const API = 'http://localhost:8000/api/legacy';
 
 type Tab = 'admins' | 'enseignants' | 'parents';
-type ModalType = 'enseignant' | 'parent' | null;
+type ModalType = 'enseignant' | 'parent' | 'admin' | null;
 
 export function UtilisateursView() {
   const [data, setData] = useState<any>({ admins: [], enseignants: [], parents: [], total: 0 });
@@ -18,7 +18,7 @@ export function UtilisateursView() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
+  const [form, setForm] = useState({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '', typeAdmin: '2', photoFile: null as File | null });
   const [selectedMatricules, setSelectedMatricules] = useState<number[]>([]);
   // Résultat de la recherche par nom de parent
   const [parentSearchResult, setParentSearchResult] = useState<{ eleves: any[], parent: any | null } | null>(null);
@@ -26,15 +26,18 @@ export function UtilisateursView() {
   const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
   const [profileType, setProfileType] = useState<'enseignant' | 'parent' | null>(null);
 
-  const getAvatarUrl = (nom: string, prenom: string, type: 'enseignant' | 'parent' | 'admin') => {
+  const getAvatarUrl = (user: any, type: 'enseignant' | 'parent' | 'admin') => {
+    if (user.photo_url && user.photo_url !== 'INDEFINI') {
+      return `http://localhost:8000${user.photo_url}`;
+    }
     // Generate photorealistic African AI portraits
     if (type === 'enseignant' || type === 'parent') {
-      const str = `${nom}-${prenom}`;
+      const str = `${user.nom}-${user.prenom || ''}`;
       let hash = 0;
       for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
       return (Math.abs(hash) % 2 === 0) ? '/avatars/african_male_teacher.png' : '/avatars/african_female_teacher.png';
     }
-    return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nom)}&backgroundColor=f1f5f9`;
+    return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.nom)}&backgroundColor=f1f5f9`;
   };
 
   useEffect(() => { fetchAll(); }, []);
@@ -83,14 +86,37 @@ export function UtilisateursView() {
     setError(''); setSuccess('');
     setSubmitting(true);
     try {
-      const endpoint = modalType === 'enseignant' ? 'enseignant' : 'parent';
-      const payload = modalType === 'enseignant'
-        ? { nom: form.nom, prenom: form.prenom, mobile: form.mobile, email: form.email, username: form.username, password: form.password, idCours: parseInt(form.idCours) || undefined }
-        : { nom: form.nom, prenom: form.prenom, mobile: form.mobile, email: form.email, username: form.username, password: form.password, matricules: selectedMatricules.length > 0 ? selectedMatricules : undefined, idPers: parseInt(form.idPers) || undefined };
+      const endpoint = modalType === 'enseignant' ? 'enseignant' : modalType === 'admin' ? 'admin' : 'parent';
+      
+      const formData = new FormData();
+      formData.append('nom', form.nom);
+      formData.append('mobile', form.mobile);
+      formData.append('username', form.username);
+      formData.append('password', form.password);
+      
+      if (modalType === 'enseignant' || modalType === 'parent') {
+        formData.append('prenom', form.prenom);
+        formData.append('email', form.email);
+      }
+      
+      if (modalType === 'enseignant') {
+        if (form.idCours) formData.append('idCours', form.idCours);
+      } else if (modalType === 'parent') {
+        if (selectedMatricules.length > 0) {
+          selectedMatricules.forEach(m => formData.append('matricules[]', String(m)));
+        }
+        if (form.idPers) formData.append('idPers', form.idPers);
+      } else if (modalType === 'admin') {
+        formData.append('typeAdmin', form.typeAdmin);
+      }
 
-      const res: any = await legacyFetch(`${API}/utilisateurs/${endpoint}`, { method: 'POST', body: JSON.stringify(payload) });
+      if (form.photoFile) {
+        formData.append('photo', form.photoFile);
+      }
+
+      const res: any = await legacyFetch(`${API}/utilisateurs/${endpoint}`, { method: 'POST', body: formData });
       setSuccess(res.message || 'Compte créé avec succès !');
-      setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
+      setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '', typeAdmin: '2', photoFile: null });
       setSelectedMatricules([]);
       setParentSearchResult(null);
       fetchAll();
@@ -103,7 +129,7 @@ export function UtilisateursView() {
     setModalType(type); setError(''); setSuccess('');
     setParentSearchResult(null);
     setSelectedMatricules([]);
-    setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '' });
+    setForm({ nom: '', prenom: '', mobile: '', email: '', username: '', password: '', idCours: '', idPers: '', typeAdmin: '2', photoFile: null });
   };
 
   const handleToggle = async (id: number, source: string) => {
@@ -127,7 +153,10 @@ export function UtilisateursView() {
     } catch (e: any) { alert(e.message || 'Erreur lors de la modification du statut'); }
   };
 
-  const typeLabel: Record<number, string> = { 1: 'Super Admin', 2: 'Admin', 3: 'Fondateur', 4: 'Directeur', 0: 'Secrétaire' };
+  const typeLabel: Record<number, string> = { 1: 'Super Admin', 2: 'Administration', 3: 'Fondateur', 4: 'Directeur', 0: 'Intendant' };
+
+  const rawRole = (localStorage.getItem('legacy_admin_type_label') || '').toLowerCase();
+  const isRoot = rawRole === 'super_admin' || rawRole === '0';
 
   if (loading) return <div className="p-6 text-slate-500">Chargement…</div>;
 
@@ -139,6 +168,11 @@ export function UtilisateursView() {
           <p className="text-slate-500 text-sm mt-0.5">{data.total} comptes dans le système</p>
         </div>
         <div className="flex gap-2">
+          {isRoot && (
+            <button onClick={() => openModal('admin')} className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors shadow-sm font-semibold">
+              <Shield className="w-4 h-4" /> Admin
+            </button>
+          )}
           <button onClick={() => openModal('enseignant')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm transition-colors shadow-sm font-semibold">
             <UserPlus className="w-4 h-4" /> Enseignant
           </button>
@@ -206,7 +240,7 @@ export function UtilisateursView() {
                 <tr key={e.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setSelectedProfile(e); setProfileType('enseignant'); }}>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={getAvatarUrl(e.nom, e.prenom, 'enseignant')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
+                      <img src={getAvatarUrl(e, 'enseignant')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
                       <p className="font-semibold text-slate-900">{e.nom} {e.prenom}</p>
                     </div>
                   </td>
@@ -244,7 +278,7 @@ export function UtilisateursView() {
                 <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setSelectedProfile(p); setProfileType('parent'); }}>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={getAvatarUrl(p.nom, p.prenom, 'parent')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
+                      <img src={getAvatarUrl(p, 'parent')} alt="Avatar" className="w-10 h-10 rounded-full border border-slate-200 shadow-sm bg-white object-cover" />
                       <p className="font-semibold text-slate-900">{p.nom} {p.prenom}</p>
                     </div>
                   </td>
@@ -280,7 +314,7 @@ export function UtilisateursView() {
                 <X className="w-5 h-5" />
               </button>
               <div className="absolute -bottom-10 left-6">
-                <img src={getAvatarUrl(selectedProfile.nom, selectedProfile.prenom, profileType)} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" />
+                <img src={getAvatarUrl(selectedProfile, profileType)} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" />
               </div>
             </div>
             
@@ -328,7 +362,7 @@ export function UtilisateursView() {
           <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-slate-900 font-bold text-lg">
-                {modalType === 'enseignant' ? '👩‍🏫 Créer un compte enseignant' : '👨‍👩‍👧 Créer un compte parent'}
+                {modalType === 'enseignant' ? '👩‍🏫 Créer un compte enseignant' : modalType === 'admin' ? '🛡️ Créer un compte admin' : '👨‍👩‍👧 Créer un compte parent'}
               </h2>
               <button type="button" onClick={() => setModalType(null)}><X className="w-5 h-5 text-slate-400" /></button>
             </div>
@@ -354,33 +388,73 @@ export function UtilisateursView() {
                   <p className="text-xs text-slate-400 mt-1">Aucun parent existant avec ce nom — nouveau compte créé</p>
                 )}
               </div>
-              <div>
-                <label className="block text-xs text-slate-600 mb-1 font-semibold">Prénom *</label>
-                <input required value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} placeholder="Jean" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
-              </div>
+              {modalType !== 'admin' && (
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1 font-semibold">Prénom *</label>
+                  <input required value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} placeholder="Jean" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Mobile</label>
                 <input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} placeholder="6XXXXXXXX" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
               </div>
+              {modalType !== 'admin' && (
+                <div>
+                  <label className="block text-xs text-slate-600 mb-1 font-semibold">Email</label>
+                  <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jean@exemple.cm" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-600 mb-1 font-semibold">Email</label>
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jean@exemple.cm" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
+                <label className="block text-xs text-slate-600 mb-1 font-semibold">Nom d'utilisateur (login) *</label>
+                <input required value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="jean.dupont" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-600 mb-1 font-semibold">Mot de passe *</label>
+                <div className="relative">
+                  <input required type={showPwd ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Min. 4 caractères" className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                  <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
             </div>
-            <div>
-              <label className="block text-xs text-slate-600 mb-1 font-semibold">Nom d'utilisateur (login) *</label>
-              <input required value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="jean.dupont" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
-            </div>
-            <div>
-              <label className="block text-xs text-slate-600 mb-1 font-semibold">Mot de passe *</label>
-              <div className="relative">
-                <input required type={showPwd ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Min. 4 caractères" className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
-                <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+
+            {modalType === 'admin' && (
+              <div>
+                <label className="block text-xs text-slate-600 mb-1 font-semibold">Type d'administrateur</label>
+                <select value={form.typeAdmin} onChange={e => setForm({...form, typeAdmin: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
+                  <option value="2">Administration</option>
+                  <option value="0">Intendant</option>
+                  <option value="4">Directeur</option>
+                  <option value="3">Fondateur</option>
+                </select>
               </div>
+            )}
+
+            <div>
+              <label className="block text-xs text-slate-600 mb-1 font-semibold">Photo de profil (Optionnel)</label>
+              <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${form.photoFile ? 'border-emerald-500 bg-emerald-50/50' : 'border-slate-300 bg-slate-50 hover:bg-slate-100'}`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {form.photoFile ? (
+                    <>
+                      <CheckCircle2 className="w-6 h-6 text-emerald-500 mb-1" />
+                      <p className="text-xs text-emerald-700 font-semibold">{form.photoFile.name}</p>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-6 h-6 text-slate-400 mb-1" />
+                      <p className="text-xs text-slate-500 font-medium">Cliquez pour importer la photo</p>
+                    </>
+                  )}
+                </div>
+                <input type="file" className="hidden" accept="image/*" onChange={e => {
+                  if (e.target.files?.[0]) setForm(f => ({ ...f, photoFile: e.target.files![0] }));
+                }} />
+              </label>
             </div>
 
             {modalType === 'enseignant' && (

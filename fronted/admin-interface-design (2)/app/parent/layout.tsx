@@ -29,6 +29,10 @@ const navigation = [
   { name: "Discipline", href: "/parent/discipline", icon: BookOpen }, // Added Discipline tab
 ]
 
+const bottomNav = [
+  { name: "Configuration", href: "/parent/settings", icon: Home }, // Note: Using Settings icon below in rendering
+]
+
 export function ParentLayoutInner({
   children,
 }: {
@@ -83,11 +87,14 @@ export function ParentLayoutInner({
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-amber-800">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500 shrink-0">
-              <BookOpen className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 shrink-0 overflow-hidden">
+              <img src="/logo_les_genies.png" alt="Logo Les Génies" className="w-full h-full object-contain p-0.5" />
             </div>
             {!collapsed && (
-              <span className="text-lg font-semibold text-white">Les Genies</span>
+              <div className="flex flex-col">
+                <span className="text-lg font-semibold text-white">Les Génies</span>
+                <span className="text-[10px] font-bold text-amber-200 bg-amber-800/50 w-fit px-1.5 py-0.5 rounded -mt-1">2025/2026</span>
+              </div>
             )}
           </div>
 
@@ -126,6 +133,30 @@ export function ParentLayoutInner({
             )
           })}
         </nav>
+
+        <div className="px-3 py-2">
+          {bottomNav.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mt-2",
+                  isActive
+                    ? "bg-amber-500 text-white"
+                    : "text-amber-100 hover:bg-amber-800 hover:text-white",
+                  collapsed && "justify-center px-2"
+                )}
+                title={collapsed ? item.name : undefined}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && <span>{item.name}</span>}
+              </Link>
+            )
+          })}
+        </div>
 
         {/* Collapse button - desktop only */}
         <div className="hidden lg:flex justify-center py-2 border-t border-amber-800">

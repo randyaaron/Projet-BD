@@ -46,6 +46,14 @@ Route::prefix('legacy')->group(function () {
     Route::middleware('legacy.typeadmin:SUPER_ADMIN,ADMIN,DIRECTEUR,SECRETAIRE,FONDATEUR')->group(function () {
         Route::get('/eleves', [LegacyStudentController::class, 'index']);
         Route::get('/paiements', [LegacyPaymentController::class, 'index']);
+        
+        // Lister les pré-inscriptions en attente
+        Route::get('/pre-inscriptions', function () {
+            $rows = DB::table('pre_inscriptions')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json(['data' => $rows]);
+        });
         Route::get('/modes', [LegacyPaymentController::class, 'modes']);
         Route::get('/dashboard-stats', [LegacyDashboardController::class, 'index']);
         Route::get('/enseignants', [LegacyTeacherController::class, 'index']);
@@ -69,6 +77,145 @@ Route::prefix('legacy')->group(function () {
         Route::post('/eleves', [LegacyStudentController::class, 'store']);
         Route::post('/paiements', [LegacyPaymentController::class, 'store']);
         Route::post('/discipline', [LegacyDisciplineController::class, 'store']);
+
+        // ──────────────────────────────────────────────────────────────
+        // PRÉ-INSCRIPTIONS (Intendant soumet, Admin valide + matricule)
+        // ──────────────────────────────────────────────────────────────
+
+
+        // Créer une pré-inscription (Intendant)
+        Route::post('/pre-inscriptions', function (Illuminate\Http\Request $request) {
+            $data = $request->validate([
+                'nom'           => 'required|string',
+                'prenom'        => 'required|string',
+                'date_naissance'=> 'nullable|date',
+                'lieu_naissance'=> 'nullable|string',
+                'sexe'          => 'nullable|integer',
+                'parent_nom'    => 'nullable|string',
+                'montant_verse' => 'required|numeric|min:0',
+                'id_mode'       => 'nullable|integer',
+                'commentaire'   => 'nullable|string',
+                'date_paiement' => 'nullable|date',
+                'photo'         => 'nullable|image|max:2048', // 2MB max
+            ]);
+
+            $photoUrl = null;
+            if ($request->hasFile('photo')) {
+                $path = $request->file('photo')->store('photos_eleves', 'public');
+                $photoUrl = '/storage/' . $path;
+            }
+
+            $id = DB::table('pre_inscriptions')->insertGetId([
+                'nom'            => strtoupper(trim($data['nom'])),
+                'prenom'         => ucfirst(trim($data['prenom'])),
+                'date_naissance' => $data['date_naissance'] ?? null,
+                'lieu_naissance' => $data['lieu_naissance'] ?? null,
+                'sexe'           => $data['sexe'] ?? 1,
+                'parent_nom'     => $data['parent_nom'] ?? null,
+                'montant_verse'  => $data['montant_verse'],
+                'id_mode'        => $data['id_mode'] ?? 1,
+                'commentaire'    => $data['commentaire'] ?? "Frais d'inscription",
+                'date_paiement'  => $data['date_paiement'] ?? now()->toDateString(),
+                'photo_url'      => $photoUrl,
+                'statut'         => 'en_attente',
+                'created_at'     => now(),
+                'updated_at'     => now()
+            ]);
+
+            return response()->json(['id' => $id, 'message' => 'Pré-inscription enregistrée.'], 201);
+        });
+
+        // Valider une pré-inscription (Admin attribue le matricule)
+        Route::post('/pre-inscriptions/{id}/valider', function (Illuminate\Http\Request $request, $id) {
+            $preInsc = DB::table('pre_inscriptions')->where('id', $id)->first();
+            if (!$preInsc) {
+                return response()->json(['message' => 'Pré-inscription introuvable'], 404);
+            }
+
+            $request->validate(['matricule' => 'required|numeric|min:1|max:4294967295']);
+            $matricule = $request->input('matricule');
+
+            // Vérifier que le matricule n'est pas déjà pris
+            $exists = DB::table('Eleve')->where('matricule', $matricule)->first();
+            if ($exists) {
+                return response()->json(['message' => 'Ce matricule est déjà utilisé par un autre élève.'], 422);
+            }
+
+            // Créer l'élève dans la table Eleve
+            DB::table('Eleve')->insert([
+                'matricule'        => $matricule,
+                'nom'              => strtoupper($preInsc->nom),
+                'prenom'           => $preInsc->prenom,
+                'dateNaissance'    => $preInsc->date_naissance ?? '2000-01-01',
+                'lieuNaissance'    => $preInsc->lieu_naissance ?? 'INDEFINI',
+                'sexe'             => $preInsc->sexe ?? 1,
+                'langue'           => 'Français',
+                'photoURL'         => $preInsc->photo_url ?? 'INDEFINI',
+                'actif'            => 1,
+                'idVilleNaissance' => 1,
+                'idAdmin'          => 1,
+                'created_at'       => now(),
+                'isDelete'         => 0,
+            ]);
+
+            if (!empty($preInsc->parent_nom)) {
+                $nomUp = strtoupper(trim($preInsc->parent_nom));
+                $existing = DB::table('Personne')->where('typePersonne', 3)->where('nom', $nomUp)->first();
+                if ($existing) {
+                    $idPers = $existing->idPers;
+                } else {
+                    $idPers = (DB::table('Personne')->max('idPers') ?? 0) + 1;
+                    DB::table('Personne')->insert([
+                        'idPers' => $idPers,
+                        'nom' => $nomUp,
+                        'prenom' => '',
+                        'dateNaissance' => '1970-01-01',
+                        'lieuNaissance' => 'INDEFINI',
+                        'typePersonne' => 3,
+                        'mobile' => '0',
+                        'phone' => '0',
+                        'username' => '',
+                        'password' => '',
+                        'idAdmin' => 1,
+                    ]);
+                }
+                $idParent = (DB::table('Parents')->max('idParent') ?? 0) + 1;
+                DB::table('Parents')->insert([
+                    'idParent' => $idParent,
+                    'idPers' => $idPers,
+                    'matricule' => $matricule,
+                    'idAdmin' => 1,
+                    'isDelete' => 0,
+                ]);
+            }
+
+            // Enregistrer le paiement dans Paiement
+            $annee = DB::table('AnneeAcademique')->orderBy('idAnnee', 'desc')->value('idAnnee') ?? 1;
+            $idPaie = (DB::table('Paiement')->max('idPaie') ?? 0) + 1;
+            DB::table('Paiement')->insert([
+                'idPaie'           => $idPaie,
+                'matricule'        => $matricule,
+                'idAca'            => $annee,
+                'montant'          => $preInsc->montant_verse,
+                'idMode'           => $preInsc->id_mode,
+                'comentaire'       => "Frais d'inscription — {$preInsc->nom} {$preInsc->prenom}",
+                'idPers'           => 1,
+                'datePaie'         => $preInsc->date_paiement,
+                'operation_ID'     => 'INSCR-' . $matricule,
+                'url'              => 'INDEFINI',
+                'dateEnregistrer'  => now(),
+            ]);
+
+            // Marquer la pré-inscription comme validée
+            DB::table('pre_inscriptions')->where('id', $id)->update([
+                'statut'             => 'validee',
+                'matricule_attribue' => $matricule,
+                'updated_at'         => now(),
+            ]);
+
+            return response()->json(['message' => 'Élève inscrit avec succès.', 'matricule' => $matricule]);
+        });
+
         Route::post('/eleves/{id}/validate', [LegacyStudentController::class, 'validateEnrollment']);
         Route::post('/eleves', [LegacyStudentController::class, 'store']);
         Route::patch('/eleves/{matricule}/toggle', [LegacyStudentController::class, 'toggleActif']);
@@ -114,6 +261,7 @@ Route::prefix('legacy')->group(function () {
         Route::delete('/titulaires/{id}', [LegacyTitulaireController::class, 'destroy']);
         Route::post('/matieres', [LegacyStructureController::class, 'createSubject']);
         Route::post('/messages', [LegacyMessageController::class, 'store']);
+        Route::post('/utilisateurs/admin', [LegacyUserController::class, 'createAdmin']);
         Route::post('/utilisateurs/enseignant', [LegacyUserController::class, 'createEnseignant']);
         Route::post('/utilisateurs/parent', [LegacyUserController::class, 'createParent']);
         Route::patch('/utilisateurs/{id}/toggle', [LegacyUserController::class, 'toggleActif']);
@@ -315,12 +463,17 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
             ->select('EmploiDuTemps.jour', 'EmploiDuTemps.heure', 'Cours.libelle as subject', 'Cours.idCours')
             ->orderBy('EmploiDuTemps.jour')->orderBy('EmploiDuTemps.heure')
             ->get();
-        $totalEleves = DB::table('Frequente')
+        $eleves = DB::table('Frequente')
             ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
             ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
             ->where('Salle.idClasse', $idClasse)
             ->where('Eleve.isDelete', 0)
-            ->count();
+            ->select('Eleve.sexe')
+            ->get();
+            
+        $totalEleves = $eleves->count();
+        $garcons = $eleves->where('sexe', '1')->count();
+        $filles = $eleves->where('sexe', '2')->count();
 
         // Use today's date (server timezone)
         $today = \Carbon\Carbon::now()->toDateString();
@@ -354,11 +507,85 @@ Route::get('/legacy/teacher/dashboard/full/{id}', function ($id) {
         'salle' => $titulaire ? $titulaire->salle : '',
         'stats' => [
             'eleves' => $totalEleves,
+            'garcons' => $garcons ?? 0,
+            'filles' => $filles ?? 0,
             'absences' => $totalAbsences,
             'devoirs' => $totalDevoirs
         ],
         'upcomingAssessments' => $upcomingAssessments,
         'schedule' => $edt
+    ]);
+});
+
+Route::get('/legacy/teacher/students/full/{id}', function ($id) {
+    $titulaire = DB::table('Titulaire')
+        ->join('Salle', 'Titulaire.idSalle', '=', 'Salle.idSalle')
+        ->join('Classe', 'Salle.idClasse', '=', 'Classe.idClasse')
+        ->where('Titulaire.idPers', $id)
+        ->where('Titulaire.actif', 1)
+        ->select('Salle.idClasse', 'Classe.libelle as classe')
+        ->first();
+
+    if (!$titulaire) {
+        return response()->json(['error' => 'Aucune classe assignée'], 404);
+    }
+
+    $idClasse = $titulaire->idClasse;
+    $classeName = $titulaire->classe;
+
+    $students = DB::table('Frequente')
+        ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+        ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
+        ->where('Salle.idClasse', $idClasse)
+        ->where('Eleve.isDelete', 0)
+        ->select('Eleve.matricule', 'Eleve.nom', 'Eleve.prenom', 'Eleve.sexe', 'Eleve.dateNaissance', 'Eleve.lieuNaissance', 'Eleve.actif')
+        ->orderBy('Eleve.nom')
+        ->get();
+
+    $grades = DB::table('Evaluation')
+        ->join('Frequente', 'Evaluation.matricule', '=', 'Frequente.matricule')
+        ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+        ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+        ->where('Salle.idClasse', $idClasse)
+        ->select('Evaluation.matricule', 'Evaluation.note', 'Cours.libelle as subject')
+        ->get();
+        
+    $attendances = DB::table('attendances')
+        ->where('school_class_id', $idClasse)
+        ->select('student_id', 'status')
+        ->get();
+
+    $result = [];
+    foreach ($students as $student) {
+        $studentGrades = $grades->where('matricule', $student->matricule);
+        $avg = $studentGrades->count() > 0 ? $studentGrades->avg('note') : 0;
+        
+        $studentAbsences = $attendances->where('student_id', $student->matricule)->where('status', 'ABSENT')->count();
+        $studentDelays = $attendances->where('student_id', $student->matricule)->where('status', 'LATE')->count();
+        
+        $lastGrade = $studentGrades->last();
+        $lastNote = $lastGrade ? ['value' => $lastGrade->note, 'subject' => $lastGrade->subject] : ['value' => 0, 'subject' => '-'];
+        
+        $result[] = [
+            'id' => (string)$student->matricule,
+            'name' => trim($student->nom . ' ' . $student->prenom),
+            'sexe' => $student->sexe,
+            'dateNaissance' => $student->dateNaissance,
+            'lieuNaissance' => $student->lieuNaissance,
+            'actif' => $student->actif,
+            'class' => $classeName,
+            'average' => round($avg, 2),
+            'trend' => 'stable',
+            'absences' => $studentAbsences,
+            'delays' => $studentDelays,
+            'lastNote' => $lastNote,
+            'parentEmail' => '' // Can be fetched from Parents table if needed
+        ];
+    }
+
+    return response()->json([
+        'classe' => $classeName,
+        'students' => $result
     ]);
 });
 
@@ -392,10 +619,13 @@ Route::get('/legacy/teacher/grades/context/{id}', function ($id) {
         ->orderBy('libelle')
         ->get();
 
+    $sessionId = request()->query('session_id', 2); // default to sequence 1 (idSession 2)
+
     $grades = DB::table('Evaluation')
         ->join('Frequente', 'Evaluation.matricule', '=', 'Frequente.matricule')
         ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
         ->where('Salle.idClasse', $idClasse)
+        ->where('Evaluation.idSession', $sessionId)
         ->select('Evaluation.idEval', 'Evaluation.matricule', 'Evaluation.idCours', 'Evaluation.note')
         ->get();
 
@@ -409,9 +639,7 @@ Route::get('/legacy/teacher/grades/context/{id}', function ($id) {
 Route::post('/legacy/teacher/grades/student/{matricule}', function (Illuminate\Http\Request $request, $matricule) {
     $idPers = $request->input('uid'); // Teacher ID
     $grades = $request->input('grades'); // [{idCours: X, note: Y}]
-
-    $session = DB::table('Session')->select('idSession')->first();
-    $defaultSession = $session ? $session->idSession : 1;
+    $sessionId = $request->input('session_id', 2); // Default to Sequence 1
 
     $epreuve = DB::table('Epreuve')->select('idEpreuve')->first();
     $defaultEpreuve = $epreuve ? $epreuve->idEpreuve : 1;
@@ -423,6 +651,7 @@ Route::post('/legacy/teacher/grades/student/{matricule}', function (Illuminate\H
         $existing = DB::table('Evaluation')
             ->where('matricule', $matricule)
             ->where('idCours', $idCours)
+            ->where('idSession', $sessionId)
             ->first();
 
         if ($existing) {
@@ -435,7 +664,7 @@ Route::post('/legacy/teacher/grades/student/{matricule}', function (Illuminate\H
                 'matricule' => $matricule,
                 'idEpreuve' => $defaultEpreuve,
                 'idCours' => $idCours,
-                'idSession' => $defaultSession,
+                'idSession' => $sessionId,
                 'idPers' => $idPers,
                 'appreciation' => 'Bien',
                 'created_at' => now()
@@ -525,6 +754,173 @@ Route::get('/legacy/parent/{idPers}/paiements',  [App\Http\Controllers\Legacy\Le
 Route::get('/legacy/parent/{idPers}/bulletins',  [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getBulletins']);
 Route::get('/legacy/parent/{idPers}/discipline', [App\Http\Controllers\Legacy\LegacyParentDashboardController::class, 'getDiscipline']);
 
+// Bulletin détaillé pour un élève + trimestre (vue imprimable)
+Route::get('/legacy/parent/bulletin-detail/{matricule}/{idTrimes}', function ($matricule, $idTrimes) {
+    $eleve = DB::table('Eleve')->where('matricule', $matricule)->where('isDelete', 0)->first();
+    if (!$eleve) return response()->json(['error' => 'Élève introuvable'], 404);
+
+    // Classe
+    $salle = DB::table('Frequente')
+        ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+        ->join('Classe', 'Salle.idClasse', '=', 'Classe.idClasse')
+        ->where('Frequente.matricule', $matricule)
+        ->select('Classe.libelle as classe', 'Salle.libelle as salle', 'Salle.idClasse')
+        ->first();
+
+    // Trimestre
+    $trimestreStr = 'Trimestre';
+    $sessionIds = [];
+    if ($idTrimes === 'annuel') {
+        $trimestreStr = 'Bulletin Annuel';
+        $sessionIds = DB::table('Session')->pluck('idSession');
+        
+        $evaluations = DB::table('Evaluation')
+            ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+            ->where('Evaluation.matricule', $matricule)
+            ->select(
+                'Cours.libelle as matiere',
+                'Cours.coefficient',
+                'Evaluation.note',
+                'Evaluation.appreciation',
+                'Evaluation.idSession'
+            )
+            ->orderBy('Cours.libelle')
+            ->get();
+    } else {
+        $trimestre = DB::table('Trimestre')->where('idTrimes', $idTrimes)->first();
+        if ($trimestre) $trimestreStr = $trimestre->libelle;
+
+        // Sessions de ce trimestre
+        $sessionIds = DB::table('Session')->where('idTrimestre', $idTrimes)->pluck('idSession');
+
+        // Évaluations filtrées par sessions du trimestre
+        $evaluations = DB::table('Evaluation')
+            ->join('Cours', 'Evaluation.idCours', '=', 'Cours.idCours')
+            ->where('Evaluation.matricule', $matricule)
+            ->whereIn('Evaluation.idSession', $sessionIds)
+            ->select(
+                'Cours.libelle as matiere',
+                'Cours.coefficient',
+                'Evaluation.note',
+                'Evaluation.appreciation',
+                'Evaluation.idSession'
+            )
+            ->orderBy('Cours.libelle')
+            ->get();
+    }
+
+    // Grouper par matière
+    $matieres = [];
+    foreach ($evaluations as $ev) {
+        $key = $ev->matiere;
+        if (!isset($matieres[$key])) {
+            $matieres[$key] = [
+                'matiere'      => $key,
+                'coefficient'  => $ev->coefficient ?? 1,
+                'notes'        => [],
+                'moyenne'      => null,
+                'appreciation' => '',
+            ];
+        }
+        if ($ev->note !== null) $matieres[$key]['notes'][] = $ev->note;
+    }
+    foreach ($matieres as &$m) {
+        if (count($m['notes']) > 0) {
+            $m['moyenne'] = round(array_sum($m['notes']) / count($m['notes']), 2);
+            $avg = $m['moyenne'];
+            $m['appreciation'] = $avg >= 16 ? 'Excellent' : ($avg >= 14 ? 'Très Bien' : ($avg >= 12 ? 'Bien' : ($avg >= 10 ? 'Passable' : 'Insuffisant')));
+        }
+    }
+    unset($m);
+
+    // Moyenne générale pondérée
+    $totalPoints = 0; $totalCoeff = 0;
+    foreach ($matieres as $m) {
+        if ($m['moyenne'] !== null) {
+            $totalPoints += $m['moyenne'] * $m['coefficient'];
+            $totalCoeff  += $m['coefficient'];
+        }
+    }
+    $moyenneGenerale = $totalCoeff > 0 ? round($totalPoints / $totalCoeff, 2) : null;
+    $mention = $moyenneGenerale === null ? '—'
+        : ($moyenneGenerale >= 16 ? 'Très Bien'
+        : ($moyenneGenerale >= 14 ? 'Bien'
+        : ($moyenneGenerale >= 12 ? 'Assez Bien'
+        : ($moyenneGenerale >= 10 ? 'Passable' : 'Insuffisant'))));
+
+    // Absences du trimestre
+    $absences = DB::table('attendances')
+        ->where('student_id', $matricule)
+        ->where('status', 'ABSENT')
+        ->orderBy('date', 'desc')
+        ->get();
+    $retards = DB::table('attendances')
+        ->where('student_id', $matricule)
+        ->where('status', 'LATE')
+        ->count();
+
+    // Sanctions
+    $sanctions = DB::table('sanctions')
+        ->where('student_id', $matricule)
+        ->orderBy('date', 'desc')
+        ->get();
+
+    // Rang dans la classe
+    $classMates = [];
+    if ($salle) {
+        $classMatesData = DB::table('Frequente')
+            ->join('Salle', 'Frequente.idSalle', '=', 'Salle.idSalle')
+            ->join('Eleve', 'Frequente.matricule', '=', 'Eleve.matricule')
+            ->where('Salle.idClasse', $salle->idClasse)
+            ->where('Eleve.isDelete', 0)
+            ->pluck('Eleve.matricule');
+
+        foreach ($classMatesData as $mat) {
+            $evals = DB::table('Evaluation')
+                ->where('matricule', $mat)
+                ->whereIn('idSession', $sessionIds)
+                ->pluck('note');
+            $avg = $evals->count() > 0 ? $evals->average() : 0;
+            $classMates[$mat] = $avg;
+        }
+        arsort($classMates);
+    }
+    $rang = array_search($matricule, array_keys($classMates));
+    $rang = $rang !== false ? $rang + 1 : '—';
+    $effectif = count($classMates);
+
+    // Infos école (avec vérification si la table existe)
+    $ecoleNom = 'École Les Génies';
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('Configuration')) {
+            $config = DB::table('Configuration')->first();
+            if ($config && isset($config->nom)) {
+                $ecoleNom = $config->nom;
+            }
+        }
+    } catch (\Exception $e) {}
+
+    $annee = date('Y') . '-' . (date('Y') + 1);
+
+    return response()->json([
+        'eleve'            => $eleve,
+        'classe'           => $salle?->classe ?? '—',
+        'salle'            => $salle?->salle ?? '—',
+        'trimestre'        => $trimestre?->libelle ?? 'Trimestre',
+        'annee'            => $annee,
+        'ecole'            => $ecoleNom,
+        'matieres'         => array_values($matieres),
+        'moyenne_generale' => $moyenneGenerale,
+        'mention'          => $mention,
+        'rang'             => $rang,
+        'effectif'         => $effectif,
+        'total_absences'   => $absences->count(),
+        'total_retards'    => $retards,
+        'sanctions'        => $sanctions,
+    ]);
+});
+
+
 Route::get('/legacy/teacher/assessments/context/{id}', function ($id) {
     $titulaire = DB::table('Titulaire')
         ->join('Salle', 'Titulaire.idSalle', '=', 'Salle.idSalle')
@@ -579,7 +975,7 @@ Route::post('/legacy/teacher/assessments/{id}', function (Illuminate\Http\Reques
         'school_class_id' => $idClasse,
         'teacher_id' => $id,
         'subject_id' => $request->input('subject_id'),
-        'term_id' => 1, // default
+        'term_id' => $request->input('term_id') ?: 1,
         'title' => $request->input('title'),
         'type' => $type, // Devoir, Contrôle, Examen
         'date' => $request->input('date'),
@@ -631,6 +1027,14 @@ Route::post('/legacy/teacher/assessments/{id}/grades', function (Illuminate\Http
     $uid = $request->input('uid');
     $gradesInput = $request->input('grades'); // [{student_id, score}]
 
+    $assessment = DB::table('assessments')->where('id', $id)->first();
+    $idCours = $assessment ? $assessment->subject_id : 1;
+    $term_id = $assessment ? $assessment->term_id : 1;
+    
+    // Map term_id to idSession (term 1 -> 2, term 2 -> 3, term 3 -> 4 based on current DB)
+    $session = DB::table('Session')->where('idTrimestre', $term_id)->first();
+    $idSession = $session ? $session->idSession : ($term_id + 1);
+
     foreach ($gradesInput as $g) {
         $existing = DB::table('grades')
             ->where('assessment_id', $id)
@@ -650,6 +1054,30 @@ Route::post('/legacy/teacher/assessments/{id}/grades', function (Illuminate\Http
                 'created_by_user_id' => $uid,
                 'created_at' => now(),
                 'updated_at' => now()
+            ]);
+        }
+
+        // --- Sync with Legacy Evaluation Table for Parent Dashboard ---
+        $existingLegacy = DB::table('Evaluation')
+            ->where('matricule', $g['student_id'])
+            ->where('idCours', $idCours)
+            ->where('idSession', $idSession)
+            ->first();
+
+        if ($existingLegacy) {
+            DB::table('Evaluation')->where('idEval', $existingLegacy->idEval)->update([
+                'note' => $g['score']
+            ]);
+        } else {
+            DB::table('Evaluation')->insert([
+                'note' => $g['score'],
+                'matricule' => $g['student_id'],
+                'idEpreuve' => 1,
+                'idCours' => $idCours,
+                'idSession' => $idSession,
+                'idPers' => $uid,
+                'appreciation' => 'Évaluation',
+                'created_at' => now()
             ]);
         }
     }

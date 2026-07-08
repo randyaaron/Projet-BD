@@ -228,7 +228,7 @@ export function AdminDashboard() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
-              <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Dernières inscriptions (Réelles)</h2>
+              <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Dernières inscriptions</h2>
               <p className="text-slate-400 text-xs mt-0.5">5 récentes de la Base de données</p>
             </div>
             <button className="flex items-center gap-1 text-blue-600 text-xs hover:text-blue-700 transition-colors" style={{ fontWeight: 600 }}>
@@ -261,7 +261,7 @@ export function AdminDashboard() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
-              <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Paiements récents (Réels)</h2>
+              <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Paiements récents</h2>
               <p className="text-slate-400 text-xs mt-0.5">Historique de la table Paiement</p>
             </div>
             <button className="flex items-center gap-1 text-blue-600 text-xs hover:text-blue-700 transition-colors" style={{ fontWeight: 600 }}>

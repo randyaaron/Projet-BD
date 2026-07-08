@@ -19,8 +19,8 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         {/* Background Image & Overlay */}
         <div className="absolute inset-0">
           <img
-            src="/african_primary_classroom.png"
-            alt="Salle de classe primaire africaine"
+            src="/Interior%20of%20a%20classroom%20with%20natural%20light%20AI%20generated.jpeg"
+            alt="Intérieur de salle de classe"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-blue-900/70 to-slate-800/80 backdrop-blur-[2px]" />
@@ -48,8 +48,9 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         {/* Hero Content */}
         <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 text-center">
           <div className="max-w-4xl mx-auto flex flex-col items-center space-y-6">
-            <div className="w-32 h-32 md:w-48 md:h-48 bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl p-4 mb-4 transform hover:scale-105 transition-transform duration-300">
+            <div className="w-32 h-32 md:w-48 md:h-48 bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl p-4 mb-2 transform hover:scale-105 transition-transform duration-300 flex flex-col items-center justify-center">
               <img src="/logo_les_genies.png" alt="Logo Les Génies" className="w-full h-full object-contain" />
+              <span className="text-blue-900 font-bold text-xs mt-1">2025/2026</span>
             </div>
             
             <span className="inline-block py-1.5 px-4 bg-blue-500/20 border border-blue-400/30 text-blue-100 rounded-full text-sm font-semibold tracking-wide backdrop-blur-md">
@@ -136,6 +137,22 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
               <img src="/african_primary_activities.png" alt="Activités" className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* NEW PARALLAX BANNER */}
+      <section className="relative h-96 overflow-hidden my-16">
+        <img 
+          src="/african_primary_classroom.png" 
+          alt="Apprentissage" 
+          className="w-full h-full object-cover scale-110" 
+          style={{transform:'scale(1.1)', objectPosition:'center 40%'}} 
+        />
+        <div className="absolute inset-0 bg-blue-900/80 flex flex-col items-center justify-center text-center px-6">
+          <h3 className="text-3xl md:text-5xl font-extrabold text-white mb-6">"L'excellence au quotidien"</h3>
+          <p className="text-blue-100 text-lg md:text-xl font-medium max-w-3xl leading-relaxed">
+            Un environnement de travail rigoureux et chaleureux, conçu pour stimuler la curiosité intellectuelle, encourager l'entraide et célébrer les réussites de chaque élève.
+          </p>
         </div>
       </section>
 

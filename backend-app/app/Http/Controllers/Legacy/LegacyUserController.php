@@ -24,6 +24,7 @@ class LegacyUserController extends Controller
                 DB::raw("'' as email"),
                 'typeAdmin as role',
                 'actif',
+                'photo_url',
                 'created_at'
             )->get();
 
@@ -42,6 +43,7 @@ class LegacyUserController extends Controller
                 'Personne.email',
                 DB::raw("'enseignant' as role"),
                 'Enseignant.Actif as actif',
+                'Personne.photo_url',
                 'Personne.created_at'
             )->get();
 
@@ -60,6 +62,7 @@ class LegacyUserController extends Controller
                 'Personne.mobile',
                 'Personne.email',
                 DB::raw("'parent' as role"),
+                'Personne.photo_url',
                 'Personne.created_at',
                 'Eleve.nom as eleveNom',
                 'Eleve.prenom as elevePrenom',
@@ -110,6 +113,7 @@ class LegacyUserController extends Controller
             'username' => ['required', 'string', 'max:100'],
             'password' => ['required', 'string', 'min:4'],
             'idCours'  => ['nullable', 'integer'],
+            'photo'    => ['nullable', 'image', 'max:2048'],
         ]);
 
         // Vérifier que le username n'existe pas déjà
@@ -118,6 +122,12 @@ class LegacyUserController extends Controller
         }
 
         $nextIdPers = (DB::table('Personne')->max('idPers') ?? 0) + 1;
+
+        $photoUrl = null;
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('photos_profils', 'public');
+            $photoUrl = '/storage/' . $path;
+        }
 
         DB::table('Personne')->insert([
             'idPers'        => $nextIdPers,
@@ -132,6 +142,7 @@ class LegacyUserController extends Controller
             'username'      => $data['username'],
             'password'      => $data['password'], // stocké en clair comme les autres
             'idAdmin'       => 1,
+            'photo_url'     => $photoUrl,
         ]);
 
         // Prendre le premier cours disponible si non fourni
@@ -166,6 +177,7 @@ class LegacyUserController extends Controller
             'matricules.*' => ['integer'],
             'matricule'  => ['nullable', 'integer'],        // compat rétrocompatible
             'idPers'     => ['nullable', 'integer'],
+            'photo'      => ['nullable', 'image', 'max:2048'],
         ]);
 
         if (DB::table('Personne')->where('username', $data['username'])->exists()) {
@@ -194,6 +206,12 @@ class LegacyUserController extends Controller
         }
 
         $hashedPassword = bcrypt($data['password']);
+
+        $photoUrl = null;
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('photos_profils', 'public');
+            $photoUrl = '/storage/' . $path;
+        }
 
         // Helper: insérer toutes les liaisons dans Parents
         $linkChildren = function (int $idPersFinal) use ($matricules) {
@@ -224,6 +242,7 @@ class LegacyUserController extends Controller
                     'password' => $hashedPassword,
                     'mobile'   => $data['mobile'] ?? $existing->mobile,
                     'email'    => $data['email'] ?? $existing->email,
+                    'photo_url'=> $photoUrl ?? $existing->photo_url,
                 ]);
                 $linkChildren((int) $data['idPers']);
                 return response()->json([
@@ -247,6 +266,7 @@ class LegacyUserController extends Controller
                 'password' => $hashedPassword,
                 'mobile'   => $data['mobile'] ?? $existingByName->mobile,
                 'email'    => $data['email'] ?? $existingByName->email,
+                'photo_url'=> $photoUrl ?? $existingByName->photo_url,
             ]);
             $linkChildren((int) $existingByName->idPers);
             return response()->json([
@@ -270,12 +290,58 @@ class LegacyUserController extends Controller
             'username'      => $data['username'],
             'password'      => $hashedPassword,
             'idAdmin'       => 1,
+            'photo_url'     => $photoUrl,
         ]);
         $linkChildren($nextIdPers);
 
         return response()->json([
             'message' => 'Compte parent créé. Identifiants : ' . $data['username'] . ' / ' . $data['password'],
             'data'    => DB::table('Personne')->where('idPers', $nextIdPers)->first(),
+        ], 201);
+    }
+
+    /** Créer un compte administrateur */
+    public function createAdmin(Request $request)
+    {
+        $data = $request->validate([
+            'nom'       => ['required', 'string', 'max:100'],
+            'mobile'    => ['nullable', 'string', 'max:15'],
+            'username'  => ['required', 'string', 'max:100'],
+            'password'  => ['required', 'string', 'min:4'],
+            'typeAdmin' => ['required', 'integer'],
+            'photo'     => ['nullable', 'image', 'max:2048'],
+        ]);
+
+        if (DB::table('Admin')->where('username', $data['username'])->exists()) {
+            return response()->json(['message' => 'Ce nom d\'utilisateur est déjà pris.'], 422);
+        }
+
+        $photoUrl = null;
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('photos_profils', 'public');
+            $photoUrl = '/storage/' . $path;
+        }
+
+        $nextId = (DB::table('Admin')->max('ID') ?? 0) + 1;
+
+        DB::table('Admin')->insert([
+            'ID'        => $nextId,
+            'nom'       => strtoupper($data['nom']),
+            'username'  => $data['username'],
+            'password'  => $data['password'], // stocké en clair comme les autres admins
+            'mobile'    => $data['mobile'] ?? '0',
+            'typeAdmin' => $data['typeAdmin'],
+            'actif'     => 1,
+            'isDelete'  => 0,
+            'photo_url' => $photoUrl,
+            'created_at'=> now(),
+            'updated_at'=> now(),
+        ]);
+
+        $admin = DB::table('Admin')->where('ID', $nextId)->first();
+        return response()->json([
+            'message' => 'Compte admin créé. Identifiants : ' . $data['username'] . ' / ' . $data['password'],
+            'data'    => $admin,
         ], 201);
     }
 

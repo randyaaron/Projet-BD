@@ -12,8 +12,6 @@ import { AdminDashboard } from './AdminDashboard';
 import { ClassesView } from './views/ClassesView';
 import { SallesView } from './views/SallesView';
 import { TitulairesView } from './views/TitulairesView';
-import { AnneesView } from './views/AnneesView';
-import { TrimestresView } from './views/TrimestresView';
 import { ElevesView } from './views/ElevesView';
 import { InscriptionsView } from './views/InscriptionsView';
 import { MatieresView } from './views/MatieresView';
@@ -33,7 +31,7 @@ import { LanguageSwitcher } from '../LanguageSwitcher';
 // ── Types ─────────────────────────────────────────────────────
 export type AdminView =
   | 'dashboard'
-  | 'classes' | 'salles' | 'titulaires' | 'annees' | 'trimestres'
+  | 'classes' | 'salles' | 'titulaires'
   | 'eleves' | 'inscriptions'
   | 'matieres' | 'emploi-du-temps' | 'epreuves' | 'notes' | 'bulletins'
   | 'presences' | 'discipline'
@@ -68,8 +66,6 @@ const navGroups: NavGroup[] = [
       { id: 'classes', label: 'Cycles & Classes', icon: School },
       { id: 'salles', label: 'Salles', icon: BookOpen },
       { id: 'titulaires', label: 'Titulaires', icon: UserCheck },
-      { id: 'annees', label: 'Années académiques', icon: CalendarDays },
-      { id: 'trimestres', label: 'Trimestres', icon: CalendarRange },
     ],
   },
   {
@@ -198,25 +194,34 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   const { settings } = useSettings();
   
   // Determine role
-  const userRole = localStorage.getItem('legacy_admin_type_label') || '';
-  const normalizedRole = userRole.toLowerCase();
+  const rawRole = (localStorage.getItem('legacy_admin_type_label') || '').toLowerCase();
+  
+  let normalizedRole = rawRole;
+  if (rawRole === 'super_admin' || rawRole === '0') normalizedRole = 'root';
+  else if (rawRole === 'secretaire' || rawRole === '3') normalizedRole = 'intendant';
+  else if (rawRole === 'admin' || rawRole === '4') normalizedRole = 'administration';
+  else if (rawRole === 'directeur' || rawRole === '1') normalizedRole = 'directeur';
+  else if (rawRole === 'fondateur' || rawRole === '2') normalizedRole = 'fondateur';
 
   let allowedItems: AdminView[] = [];
   if (normalizedRole === 'root') {
-    allowedItems = ['dashboard', 'utilisateurs', 'configuration'];
+    allowedItems = ['dashboard', 'utilisateurs', 'configuration', 'messagerie'];
   } else if (normalizedRole === 'intendant') {
-    allowedItems = ['dashboard', 'paiements', 'impayes'];
+    allowedItems = ['dashboard', 'paiements', 'impayes', 'configuration', 'messagerie'];
   } else if (normalizedRole === 'fondateur') {
-    allowedItems = ['dashboard', 'paiements', 'impayes', 'configuration', 'utilisateurs'];
-  } else if (normalizedRole === 'administration' || normalizedRole === 'directeur') {
+    allowedItems = ['dashboard', 'paiements', 'impayes', 'configuration', 'eleves', 'messagerie', 'emploi-du-temps', 'epreuves', 'notes', 'bulletins', 'presences', 'discipline'];
+  } else if (normalizedRole === 'directeur') {
+    allowedItems = ['dashboard', 'configuration', 'eleves', 'messagerie', 'emploi-du-temps', 'epreuves', 'notes', 'bulletins', 'presences', 'discipline'];
+  } else if (normalizedRole === 'administration') {
     allowedItems = [
       'dashboard', 'classes', 'salles', 'titulaires', 'annees', 'trimestres',
       'eleves', 'inscriptions', 'matieres', 'emploi-du-temps', 'epreuves',
-      'notes', 'bulletins', 'presences', 'discipline', 'messagerie'
+      'notes', 'bulletins', 'presences', 'discipline', 'messagerie', 'configuration'
     ];
   } else {
     // Fallback: show everything for super admins or unknown types that bypassed
     allowedItems = navGroups.flatMap(g => g.items).map(i => i.id);
+    if (!allowedItems.includes('configuration')) allowedItems.push('configuration');
   }
 
   const filteredNavGroups = navGroups.map(group => ({
@@ -264,8 +269,6 @@ export function AdminApp({ onLogout }: AdminAppProps) {
       case 'classes': return <ClassesView />;
       case 'salles': return <SallesView />;
       case 'titulaires': return <TitulairesView />;
-      case 'annees': return <AnneesView />;
-      case 'trimestres': return <TrimestresView />;
       case 'eleves': return <ElevesView />;
       case 'inscriptions': return <InscriptionsView />;
       case 'matieres': return <MatieresView />;
@@ -329,7 +332,7 @@ export function AdminApp({ onLogout }: AdminAppProps) {
           </div>
           <div className="min-w-0">
             <p className="text-white text-sm truncate" style={{ fontWeight: 700 }}>{settings.schoolName || 'Les Génies'}</p>
-            <p className="text-slate-500 text-xs">Espace Administrateur</p>
+            <p className="text-slate-500 text-xs flex items-center gap-2">Espace Administrateur <span className="bg-slate-800 text-slate-300 px-1.5 rounded-md">2025/2026</span></p>
           </div>
           <button
             className="lg:hidden ml-auto text-slate-500 hover:text-white"

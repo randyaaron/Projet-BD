@@ -19,6 +19,9 @@ export function ElevesView() {
 
   const [selectedProfile, setSelectedProfile] = useState<any | null>(null);
 
+  const rawRole = (localStorage.getItem('legacy_admin_type_label') || '').toLowerCase();
+  const canAssignClass = !(rawRole === 'directeur' || rawRole === '1' || rawRole === 'fondateur' || rawRole === '2');
+
   useEffect(() => {
     fetchEleves();
     legacyFetch<any>(`${API}/classes`).then(r => setClassesList(r.data || [])).catch(console.error);
@@ -105,8 +108,11 @@ export function ElevesView() {
   const pages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const getAvatarUrl = (nom: string, prenom: string, sexe: number | string) => {
-    const isGirl = String(sexe) === '2';
+  const getAvatarUrl = (el: any) => {
+    if (el.photoURL && el.photoURL !== 'INDEFINI') {
+      return `http://localhost:8000${el.photoURL}`;
+    }
+    const isGirl = String(el.sexe) === '2';
     return isGirl ? '/avatars/african_girl_student.png' : '/avatars/african_boy_student.png';
   };
 
@@ -210,7 +216,7 @@ export function ElevesView() {
                 <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedProfile(el)}>
                   <div className="flex items-center gap-4 group">
                     <div className="relative">
-                      <img src={getAvatarUrl(el.nom, el.prenom, el.sexe)} alt="Avatar" className="w-12 h-12 rounded-xl border-2 border-slate-100 shadow-sm object-cover group-hover:border-blue-400 transition-colors bg-white" />
+                      <img src={getAvatarUrl(el)} alt="Avatar" className="w-12 h-12 rounded-xl border-2 border-slate-100 shadow-sm object-cover group-hover:border-blue-400 transition-colors bg-white" />
                       <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${el.actif ? 'bg-emerald-500' : 'bg-red-500'}`} />
                     </div>
                     <div>
@@ -226,7 +232,7 @@ export function ElevesView() {
                         <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
                         <span className="text-xs font-bold text-blue-600">Assignation...</span>
                       </div>
-                    ) : !el.actif ? (
+                    ) : (!el.actif || !canAssignClass) ? (
                       <span className="px-3 py-2 bg-slate-50 text-slate-400 border-2 border-slate-200 rounded-xl text-xs font-bold flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
                         {el.classe || 'Non assigné'}
@@ -321,7 +327,7 @@ export function ElevesView() {
                 <X className="w-5 h-5" />
               </button>
               <div className="absolute -bottom-12 left-8">
-                <img src={getAvatarUrl(selectedProfile.nom, selectedProfile.prenom, selectedProfile.sexe)} alt="Profile" className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg bg-white object-cover" />
+                <img src={getAvatarUrl(selectedProfile)} alt="Profile" className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg bg-white object-cover" />
               </div>
             </div>
 

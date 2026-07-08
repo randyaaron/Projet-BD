@@ -23,6 +23,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 interface Student {
   id: string;
   name: string;
+  sexe: number;
+  dateNaissance: string;
+  lieuNaissance: string;
+  actif: number;
   class: string;
   average: number;
   trend: 'up' | 'down' | 'stable';
@@ -59,6 +63,9 @@ function StudentsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClass, setSelectedClass] = useState('Toutes');
   const [sortBy, setSortBy] = useState<'name' | 'average' | 'absences'>('name');
+  const [error, setError] = useState('');
+  
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     let userId = searchParams.get('userId');
@@ -77,8 +84,8 @@ function StudentsContent() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        // Using grades context to get students for this teacher
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}`);
+        // Fetch real student stats from the new endpoint
+        const res = await fetch(`http://localhost:8000/api/legacy/teacher/students/full/${uid}`);
         if (res.status === 404) {
           const body = await res.json();
           setError(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
@@ -87,20 +94,7 @@ function StudentsContent() {
         if (!res.ok) throw new Error('Erreur de chargement');
         const data = await res.json();
 
-        // Check if there's a specific endpoint for student profiles, but for now we format the grades context
-        // to fit the Student interface expected by this view
-        const formattedStudents: Student[] = (data.students || []).map((s: any) => ({
-          id: String(s.matricule),
-          name: `${s.nom} ${s.prenom || ''}`.trim(),
-          class: data.classe || 'Classe',
-          average: 0, // Placeholder
-          trend: 'stable',
-          absences: 0,
-          delays: 0,
-          lastNote: { value: 0, subject: '-' },
-          parentEmail: ''
-        }));
-        setStudents(formattedStudents);
+        setStudents(data.students || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -244,8 +238,8 @@ function StudentsContent() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12 border-2 border-slate-100">
-                        <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                          {student.name.split(' ').map(n => n[0]).join('')}
+                        <AvatarFallback className={String(student.sexe) === '2' ? "bg-pink-100 text-pink-700" : "bg-blue-100 text-blue-700"}>
+                          {student.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -307,7 +301,10 @@ function StudentsContent() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-2">
-                    <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                    <button 
+                      onClick={() => setSelectedStudent(student)}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    >
                       <Eye className="h-4 w-4" />
                       Voir profil
                     </button>
@@ -322,6 +319,79 @@ function StudentsContent() {
           )}
         </div>
       </div>
+
+      {/* Profil Élève Modal */}
+      {selectedStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative h-32 bg-gradient-to-r from-blue-600 to-indigo-600">
+              <button 
+                onClick={() => setSelectedStudent(null)} 
+                className="absolute top-4 right-4 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 p-2 rounded-full transition-colors backdrop-blur-md"
+              >
+                <Minus className="w-5 h-5 rotate-45" /> {/* Close icon workaround */}
+              </button>
+              <div className="absolute -bottom-12 left-8">
+                <Avatar className="h-24 w-24 border-4 border-white shadow-lg bg-white">
+                  <AvatarFallback className={cn("text-2xl font-bold", String(selectedStudent.sexe) === '2' ? "bg-pink-100 text-pink-700" : "bg-blue-100 text-blue-700")}>
+                    {selectedStudent.name.split(' ').map(n => n[0]).slice(0, 2).join('')}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
+
+            <div className="px-8 pt-16 pb-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">{selectedStudent.name}</h2>
+                  <p className="text-blue-600 font-bold mt-1">Matricule : {selectedStudent.id}</p>
+                </div>
+                <span className={cn(
+                  "px-3 py-1.5 rounded-lg text-sm font-bold border-2",
+                  selectedStudent.actif ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"
+                )}>
+                  {selectedStudent.actif ? 'Actif' : 'Inactif'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Users className="w-4 h-4" /> Sexe</p>
+                  <p className="text-slate-800 font-bold">{String(selectedStudent.sexe) === '2' ? 'Fille' : 'Garçon'}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><GraduationCap className="w-4 h-4" /> Moyenne</p>
+                  <p className={cn("font-bold text-lg", getAverageColor(selectedStudent.average).split(' ')[0])}>
+                    {selectedStudent.average.toFixed(1)}/20
+                  </p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Clock className="w-4 h-4" /> Naissance</p>
+                  <p className="text-slate-800 font-bold">
+                    {selectedStudent.dateNaissance ? new Date(selectedStudent.dateNaissance).toLocaleDateString('fr-FR') : 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><MoreHorizontal className="w-4 h-4" /> Lieu</p>
+                  <p className="text-slate-800 font-bold">{selectedStudent.lieuNaissance || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl p-4">
+                 <div>
+                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wider">Absences</p>
+                    <p className="text-xl font-black text-blue-900 mt-1">{selectedStudent.absences}</p>
+                 </div>
+                 <div className="h-10 w-px bg-blue-200"></div>
+                 <div>
+                    <p className="text-xs font-bold text-blue-800 uppercase tracking-wider">Retards</p>
+                    <p className="text-xl font-black text-blue-900 mt-1">{selectedStudent.delays}</p>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

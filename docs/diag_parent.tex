@@ -1,0 +1,84 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,fit,backgrounds}
+
+\definecolor{parentcol}{RGB}{217,119,6}
+\definecolor{primary}{RGB}{30,58,95}
+\definecolor{sysback}{RGB}{245,248,255}
+
+\tikzset{
+  ucp/.style={ellipse,draw=parentcol,fill=white,line width=0.8pt,
+    text width=2.6cm,align=center,font=\fontsize{7}{8.5}\selectfont,
+    inner sep=2pt,minimum height=0.8cm},
+  ucs/.style={ellipse,draw=primary,fill=primary!5,line width=1pt,
+    text width=2.6cm,align=center,font=\fontsize{7}{9}\selectfont\bfseries,
+    inner sep=2pt,minimum height=0.8cm},
+  assoc/.style={draw=gray!50,line width=0.55pt},
+  extn/.style={draw=orange!60,dashed,line width=0.5pt,->,>=stealth},
+}
+
+\newcommand{\actor}[4]{%
+  \begin{scope}[shift={(#1,#2)}]
+    \draw[fill=#4!20,draw=#4,line width=1pt] (0,0.38) circle(0.19);
+    \draw[#4,line width=1pt](0,0.19)--(0,-0.24);
+    \draw[#4,line width=1pt](-0.24,0.02)--(0.24,0.02);
+    \draw[#4,line width=1pt](0,-0.24)--(-0.2,-0.54);
+    \draw[#4,line width=1pt](0,-0.24)--(0.2,-0.54);
+    \node[below,font=\fontsize{7.5}{9}\selectfont\bfseries,text=#4,
+      text width=2.2cm,align=center] at(0,-0.62){#3};
+  \end{scope}}
+
+\begin{document}
+\begin{tikzpicture}
+
+%% Frontiere
+\draw[rounded corners=8pt,fill=sysback,draw=primary!30,line width=2pt]
+  (-0.4,-6.0) rectangle (14.5,2.0);
+\node[anchor=north west,font=\normalsize\bfseries,text=primary] at(-0.2,2.0)
+  {Diagramme de Cas d'Utilisation --- Espace Parent};
+
+%% UC partagee
+\node[ucs](login) at (3.0,1.0){Se connecter};
+
+%% ===== ACTEUR =====
+\actor{-3.0}{-2.0}{Parent}{parentcol}
+
+%% ===== UC PARENT =====
+\begin{scope}
+  \node[ucp](p1) at (3.0,-0.8){Consulter le tableau de bord};
+  \node[ucp](p2) at (3.0,-2.5){Consulter les notes};
+  
+  \node[ucp](p3) at (3.0,-4.2){Consulter les bulletins};
+  \node[ucp](p3sub) at (8.0,-4.2){Imprimer un bulletin PDF};
+
+  \node[ucp](p4) at (8.0,-0.8){Lire la messagerie};
+  \node[ucp](p5) at (8.0,-2.5){Consulter les paiements};
+\end{scope}
+
+%% Associations
+\draw[assoc](-2.2,-1.81) -- (login.west);
+\draw[assoc](-2.2,-1.81) -- (p1.west);
+\draw[assoc](-2.2,-1.81) -- (p2.west);
+\draw[assoc](-2.2,-1.81) -- (p3.west);
+\draw[assoc](-2.2,-1.81) -- (p4.west);
+\draw[assoc](-2.2,-1.81) -- (p5.west);
+
+%% extend
+\draw[extn] (p3sub.west) -- (p3.east)
+  node[midway,above,font=\fontsize{5.5}{7}\selectfont,text=orange!80]{\textit{\guillemotleft extend\guillemotright}};
+
+%% ===== LEGENDE =====
+\draw[rounded corners=3pt,fill=white,draw=gray!30,line width=0.5pt]
+  (9.5,-5.5) rectangle (14.2,-4.1);
+\draw[assoc](9.8,-4.4)--(11.0,-4.4);
+\node[right,font=\fontsize{6}{7}\selectfont] at(11.0,-4.4){Association};
+\draw[extn](9.8,-5.1)--(11.0,-5.1);
+\node[right,font=\fontsize{6}{7}\selectfont] at(11.0,-5.1)
+  {\textit{\guillemotleft extend\guillemotright}};
+
+\end{tikzpicture}
+\end{document}

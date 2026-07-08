@@ -1,0 +1,130 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc,fit,backgrounds}
+
+\definecolor{admincol}{RGB}{109,40,217}
+\definecolor{primary}{RGB}{30,58,95}
+\definecolor{sysback}{RGB}{245,248,255}
+
+\tikzset{
+  uca/.style={ellipse,draw=admincol,fill=white,line width=0.8pt,
+    text width=2.6cm,align=center,font=\fontsize{6.5}{8}\selectfont,
+    inner sep=2pt,minimum height=0.7cm},
+  ucs/.style={ellipse,draw=primary,fill=primary!5,line width=1pt,
+    text width=2.6cm,align=center,font=\fontsize{7}{9}\selectfont\bfseries,
+    inner sep=2pt,minimum height=0.7cm},
+  assoc/.style={draw=gray!50,line width=0.6pt},
+}
+
+\newcommand{\actor}[4]{%
+  \begin{scope}[shift={(#1,#2)}]
+    \draw[fill=#4!20,draw=#4,line width=1pt] (0,0.38) circle(0.19);
+    \draw[#4,line width=1pt](0,0.19)--(0,-0.24);
+    \draw[#4,line width=1pt](-0.24,0.02)--(0.24,0.02);
+    \draw[#4,line width=1pt](0,-0.24)--(-0.2,-0.54);
+    \draw[#4,line width=1pt](0,-0.24)--(0.2,-0.54);
+    \node[below,font=\fontsize{7.5}{9}\selectfont\bfseries,text=#4,
+      text width=2.6cm,align=center] at(0,-0.62){#3};
+  \end{scope}}
+
+\begin{document}
+\begin{tikzpicture}
+
+%%=========================================================
+%%  FRONTIERE DU SYSTEME
+%%=========================================================
+\draw[rounded corners=8pt,fill=sysback,draw=primary!30,line width=2pt]
+  (-1.0,-14.2) rectangle (21.5,1.8);
+\node[anchor=north west,font=\large\bfseries,text=primary] at (-0.8,1.8)
+  {Diagramme de Cas d'Utilisation --- Espace Administration};
+
+%%=========================================================
+%%  UC PARTAGES
+%%=========================================================
+\node[ucs](login) at (10.2,-0.2){Se connecter};
+\node[uca](dash) at (4.0,-2.0){Consulter le tableau de bord};
+\node[uca](config) at (16.5,-2.0){Configurer le syst\`eme};
+
+%%=========================================================
+%%  ACTEURS (Gauche / Droite)
+%%=========================================================
+\actor{-3.2}{-5.0}{Directeur /\\Administration}{admincol}
+\actor{23.8}{-5.0}{Intendant}{admincol}
+\actor{23.8}{-9.5}{Fondateur}{admincol}
+\actor{23.8}{-13.0}{Root}{admincol}
+
+%%=========================================================
+%%  UC DIRECTEUR / ADMINISTRATION
+%%=========================================================
+\begin{scope}
+  \draw[rounded corners=4pt,fill=admincol!4,draw=admincol!20,line width=0.6pt]
+    (-0.5,-3.0) rectangle (9.5,-13.5);
+  \node[anchor=west,font=\fontsize{7}{8}\selectfont\bfseries\itshape,text=admincol]
+    at (-0.3,-3.4) {Acad\'emique, P\'edagogie \& Suivi};
+
+  \node[uca](da1) at (2.0,-4.5){G\'erer les classes};
+  \node[uca](da2) at (2.0,-5.8){G\'erer les salles};
+  \node[uca](da3) at (2.0,-7.1){G\'erer les titulaires};
+  
+  \node[uca](da4) at (2.0,-8.4){Inscrire un \'el\`eve};
+  \node[uca](da5) at (2.0,-9.7){G\'erer les \'el\`eves};
+  \node[uca](da6) at (2.0,-11.0){G\'erer les pr\'esences};
+  \node[uca](da7) at (2.0,-12.3){G\'erer la discipline};
+
+  \node[uca](dp1) at (7.0,-4.5){G\'erer les mati\`eres};
+  \node[uca](dp2) at (7.0,-5.8){G\'erer l'emploi du temps};
+  \node[uca](dp3) at (7.0,-7.1){Planifier les \'epreuves};
+  
+  \node[uca](dp4) at (7.0,-8.4){Consulter les notes};
+  \node[uca](dp5) at (7.0,-9.7){G\'en\'erer les bulletins};
+  \node[uca](dp6) at (7.0,-11.0){Envoyer des messages};
+\end{scope}
+
+\foreach \n in {dash, config, da1, da2, da3, da4, da5, da6, da7, dp1, dp2, dp3, dp4, dp5, dp6}
+  \draw[assoc](-1.8,-4.81) -- (\n.west);
+\draw[assoc](-1.8,-4.81) -- (login.west);
+
+%%=========================================================
+%%  UC FINANCES (Intendant, Fondateur)
+%%=========================================================
+\begin{scope}
+  \draw[rounded corners=4pt,fill=admincol!4,draw=admincol!20,line width=0.6pt]
+    (11.0,-4.5) rectangle (19.5,-6.5);
+  \node[anchor=west,font=\fontsize{7}{8}\selectfont\bfseries\itshape,text=admincol]
+    at (11.2,-4.9) {Gestion Financi\`ere};
+
+  \node[uca](f1) at (13.2,-5.7){G\'erer les paiements};
+  \node[uca](f2) at (17.2,-5.7){Consulter les impay\'es};
+\end{scope}
+
+\foreach \n in {dash, config, f1, f2} {
+  \draw[assoc](22.4,-4.81) -- (\n.east);
+  \draw[assoc](22.4,-9.31) -- (\n.east);
+}
+\draw[assoc](22.4,-4.81) -- (login.east);
+\draw[assoc](22.4,-9.31) -- (login.east);
+
+%%=========================================================
+%%  UC UTILISATEURS (Fondateur, Root)
+%%=========================================================
+\begin{scope}
+  \draw[rounded corners=4pt,fill=admincol!4,draw=admincol!20,line width=0.6pt]
+    (13.0,-8.5) rectangle (17.5,-10.5);
+  \node[anchor=west,font=\fontsize{7}{8}\selectfont\bfseries\itshape,text=admincol]
+    at (13.2,-8.9) {Admin. Syt\`eme};
+
+  \node[uca](u1) at (15.2,-9.7){G\'erer les utilisateurs};
+\end{scope}
+
+\draw[assoc](22.4,-9.31) -- (u1.east);
+\draw[assoc](22.4,-12.81) -- (u1.east);
+\draw[assoc](22.4,-12.81) -- (config.east);
+\draw[assoc](22.4,-12.81) -- (dash.east);
+\draw[assoc](22.4,-12.81) -- (login.east);
+
+\end{tikzpicture}
+\end{document}
