@@ -195,26 +195,16 @@ Avant de se connecter, les utilisateurs arrivent sur la \textbf{page d'accueil p
 
 \section{Écran de connexion}
 
-L'écran de connexion propose \textbf{deux portails} :
+L'écran de connexion est le point d'entrée unique pour tous les utilisateurs de la plateforme :
 
-\subsection{Portail Utilisateurs (Parents et Enseignants)}
 \begin{enumerate}[leftmargin=*]
-  \item Cliquer sur l'onglet \textbf{«~Connexion Utilisateur~»}
   \item Saisir son \textbf{identifiant} et son \textbf{mot de passe}
   \item Cliquer sur \textbf{«~Se connecter~»}
-\end{enumerate}
-
-\subsection{Espace Sécurisé (Administration)}
-L'accès à l'espace d'administration est protégé par un code d'accès supplémentaire :
-\begin{enumerate}[leftmargin=*]
-  \item Cliquer sur l'onglet \textbf{«~Espace Sécurisé~»}
-  \item Saisir le \textbf{code d'accès} fourni par la direction
-  \item Sélectionner son \textbf{grade} (Directeur, Fondateur, Intendant, etc.)
-  \item Saisir ses identifiants et se connecter
+  \item Le système détecte automatiquement votre profil (Administrateur, Enseignant, ou Parent) et vous redirige vers le tableau de bord correspondant.
 \end{enumerate}
 
 \begin{warningbox}[\faLock\ Sécurité]
-Ne communiquez jamais votre mot de passe ni le code d'accès administrateur à des tiers. En cas de perte, contactez le service informatique.
+Ne communiquez jamais votre mot de passe à des tiers. En cas de perte, contactez le service informatique pour obtenir une réinitialisation.
 \end{warningbox}
 
 \section{Déconnexion}
@@ -238,6 +228,12 @@ L'espace administrateur est le cœur de gestion de l'établissement. Il est acce
   \item Dernières activités du système
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png"}
+    \caption{Tableau de bord de l'administrateur}
+\end{figure}
+
 \section{Gestion Académique}
 
 \subsection{Classes et Cycles}
@@ -252,10 +248,22 @@ Permet de créer et gérer les niveaux scolaires (Maternelle, CP, CE1, CE2, CM1,
   \item Supprimer une classe (si aucun élève n'y est inscrit)
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png"}
+    \caption{Gestion des classes et des cycles}
+\end{figure}
+
 \subsection{Salles}
 \textit{Menu : Gestion académique > Salles}
 
 Permet de gérer les salles de classe physiques de l'établissement. Chaque salle est associée à une classe et peut recevoir un titulaire.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png"}
+    \caption{Gestion des salles}
+\end{figure}
 
 \subsection{Titulaires}
 \textit{Menu : Gestion académique > Titulaires}
@@ -269,6 +277,11 @@ Permet d'affecter un enseignant titulaire à une salle/classe. Un titulaire est 
   \item Sélectionner la salle concernée
   \item Valider
 \end{enumerate}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png"}
+    \caption{Affectation des titulaires}
+\end{figure}
 
 \section{Gestion des Élèves}
 
@@ -284,6 +297,18 @@ Affiche l'ensemble des élèves inscrits avec leurs informations : nom, prénom,
   \item Clic sur un élève pour voir son profil complet
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png"}
+    \caption{Liste globale des élèves}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png"}
+    \caption{Profil détaillé d'un élève}
+\end{figure}
+
 \subsection{Inscriptions}
 \textit{Menu : Élèves > Inscriptions}
 
@@ -298,6 +323,18 @@ Permet d'inscrire un nouvel élève dans l'établissement.
   \item Valider l'inscription — un matricule unique est généré automatiquement
 \end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png"}
+    \caption{Formulaire de pré-inscription (Étape 1)}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png"}
+    \caption{Validation de l'inscription}
+\end{figure}
+
 \begin{tipbox}[\faLightbulb\ Conseil]
 Vérifiez qu'un élève n'est pas déjà inscrit en le recherchant par son nom avant de créer une nouvelle fiche, afin d'éviter les doublons.
 \end{tipbox}
@@ -309,15 +346,35 @@ Vérifiez qu'un élève n'est pas déjà inscrit en le recherchant par son nom a
 
 Permet de créer et gérer le catalogue des matières enseignées, avec leur coefficient respectif.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png"}
+    \caption{Catalogue des matières}
+\end{figure}
+
 \subsection{Emploi du Temps}
 \textit{Menu : Pédagogie > Emploi du temps}
 
 Permet de visualiser et modifier l'emploi du temps par classe et par jour de la semaine.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png"}
+    \caption{Emploi du temps}
+\end{figure}
+
+
 \subsection{Épreuves}
 \textit{Menu : Pédagogie > Épreuves}
 
 Permet de planifier les évaluations (contrôles, examens) en indiquant la matière, la date et le type d'épreuve.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png"}
+    \caption{Epreuves}
+\end{figure}
+
 
 \subsection{Notes et Moyennes}
 \textit{Menu : Pédagogie > Notes \& Moyennes}
@@ -330,10 +387,22 @@ Affiche un récapitulatif des performances académiques de tous les élèves :
   \item Identification des élèves en difficulté (moyenne $<$ 10/20)
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png"}
+    \caption{Notes \& Moyennes}
+\end{figure}
+
 \subsection{Bulletins PDF}
 \textit{Menu : Pédagogie > Bulletins PDF}
 
 Permet de générer et télécharger les bulletins scolaires au format PDF pour n'importe quel trimestre.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png"}
+    \caption{Bulletins PDF}
+\end{figure}
 
 \section{Suivi des Élèves}
 
@@ -341,6 +410,13 @@ Permet de générer et télécharger les bulletins scolaires au format PDF pour 
 \textit{Menu : Suivi > Présences}
 
 Permet de consulter le registre des absences et des retards, filtré par date ou par élève.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png"}
+    \caption{Presences}
+\end{figure}
+
 
 \subsection{Discipline}
 \textit{Menu : Suivi > Discipline}
@@ -353,6 +429,13 @@ Permet de saisir et consulter les sanctions disciplinaires. Chaque sanction comp
   \item Le nombre de points de conduite retirés
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png"}
+    \caption{Discipline}
+\end{figure}
+
+
 \section{Gestion Financière}
 
 \subsection{Paiements}
@@ -360,11 +443,22 @@ Permet de saisir et consulter les sanctions disciplinaires. Chaque sanction comp
 
 Affiche l'historique de tous les paiements reçus (frais de scolarité, cantines, etc.) avec les détails de chaque transaction.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png"}
+    \caption{Historique des paiements}
+\end{figure}
+
 \subsection{Impayés}
 \textit{Menu : Financier > Impayés}
 
 Liste les familles ayant des paiements en retard, avec le montant dû et la date d'échéance dépassée.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png"}
+    \caption{Impayes}
+\end{figure}
 \section{Communication}
 
 \subsection{Messagerie}
@@ -395,10 +489,21 @@ Permet de créer des comptes pour les enseignants et les parents, de réinitiali
   \item Un mot de passe temporaire est généré — à communiquer à l'utilisateur
 \end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png"}
+    \caption{Liste des utilisateurs du système}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png"}
+    \caption{Création d'un nouveau compte}
+\end{figure}
+
 \subsection{Configuration}
 \textit{Menu : Administration > Configuration}
 
-Permet de personnaliser les paramètres de l'établissement : nom de l'école, logo, informations de contact, année académique en cours.
 
 % ══════════════════════════════════════════════════════════════
 \chapter{Espace Enseignant}
@@ -415,6 +520,12 @@ L'espace enseignant est accessible sur le port 3001. Il est optimisé pour une u
   \item La moyenne générale de la classe
   \item Les dernières notes saisies
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png"}
+    \caption{Tableau de bord de l'enseignant}
+\end{figure}
 
 \begin{infobox}[\faInfoCircle\ Information]
 Si le message «~Aucune classe assignée~» s'affiche, contactez l'administrateur pour qu'il vous affecte à une classe via le menu Titulaires.
@@ -453,6 +564,55 @@ Permet de saisir les absences et retards du jour pour les élèves de la classe.
   \item Enregistrer
 \end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png"}
+    \caption{Saisie de l'appel et des présences}
+\end{figure}
+
+\section{Évaluations et Notes}
+
+\subsection{Créer une Épreuve (Vue à développer)}
+\textit{Emplacement prévu : Menu > Évaluations > Nouvelle Épreuve}
+
+Cette nouvelle interface permettra à l'enseignant de créer une épreuve, d'en définir la matière, le trimestre, le type (Séquence, Examen) et le coefficient. Une fois l'épreuve créée, elle s'ajoutera à la liste pour permettre la saisie des notes.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png"}
+    \caption{Creer une epreuve}
+\end{figure}
+
+\subsection{Saisie des Notes}
+\textit{Menu : Notes}
+
+Permet de saisir les notes des élèves pour une épreuve donnée, avec un tableau listant tous les élèves de la classe.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png"}
+    \caption{Saisie des notes}
+\end{figure}
+
+\section{Organisation Pédagogique}
+
+
+\subsection{Emploi du Temps}
+\textit{Menu : Emploi du temps}
+
+Affiche la grille horaire hebdomadaire de l'enseignant.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png"}
+    \caption{Emploi du temps}
+\end{figure}
+
+\section{Consulter les Bulletins}
+\textit{Menu : Bulletins PDF}
+
+L'enseignant peut avoir un aperçu des bulletins trimestriels générés pour sa classe et les exporter au format PDF.
+
 % ══════════════════════════════════════════════════════════════
 \chapter{Espace Parent}
 
@@ -473,6 +633,12 @@ Après connexion, le parent accède à un tableau de bord personnalisé présent
   \item La \textbf{messagerie} (messages reçus de l'administration)
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png"}
+    \caption{Tableau de bord du parent}
+\end{figure}
+
 \section{Consulter les Notes}
 \textit{Menu : Notes}
 
@@ -492,6 +658,12 @@ La page «~Carnet de Notes~» affiche, pour chaque enfant, l'ensemble des notes 
 
 Si le parent a plusieurs enfants, des boutons permettent de basculer d'un enfant à l'autre.
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png"}
+    \caption{Suivi académique (Notes)}
+\end{figure}
+
 \section{Consulter les Bulletins}
 \textit{Menu : Bulletins}
 
@@ -503,6 +675,12 @@ La page affiche tous les bulletins disponibles par trimestre et par enfant. Chaq
   \item La mention obtenue
   \item Le rang dans la classe
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png"}
+    \caption{Liste des bulletins disponibles}
+\end{figure}
 
 \subsection{Ouvrir un bulletin}
 \begin{enumerate}[leftmargin=*]
@@ -521,6 +699,13 @@ Le bulletin affiché contient toutes les informations officielles :
   \item \textbf{Appréciation générale} du maître/de la maîtresse
   \item \textbf{Zones de signature} : Directeur, Maître/Maîtresse, Parent
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png"}
+    \caption{Vue Bulletin}
+\end{figure}
+
 
 \subsection{Imprimer ou sauvegarder en PDF}
 \begin{enumerate}[leftmargin=*]
@@ -543,6 +728,12 @@ Permet de consulter les messages envoyés par l'administration ou les enseignant
 \textit{Menu : Paiements}
 
 Affiche l'historique des paiements effectués pour les frais de scolarité et les éventuels montants restants à régler.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{"images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png"}
+    \caption{Suivi financier du parent}
+\end{figure}
 
 % ══════════════════════════════════════════════════════════════
 \chapter{Questions Fréquentes}

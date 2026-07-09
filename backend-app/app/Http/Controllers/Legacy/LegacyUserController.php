@@ -167,10 +167,10 @@ class LegacyUserController extends Controller
     public function createParent(Request $request)
     {
         $data = $request->validate([
-            'nom'        => ['required', 'string', 'max:100'],
-            'prenom'     => ['required', 'string', 'max:100'],
-            'mobile'     => ['nullable', 'string', 'max:15'],
-            'email'      => ['nullable', 'email', 'max:255'],
+            'nom'        => ['required', 'string', 'max:255'],
+            'prenom'     => ['nullable', 'string', 'max:255'],
+            'mobile'     => ['nullable', 'string', 'max:255'],
+            'email'      => ['nullable', 'string', 'max:255'],
             'username'   => ['required', 'string', 'max:100'],
             'password'   => ['required', 'string', 'min:4'],
             'matricules' => ['nullable', 'array'],          // tableau de matricules

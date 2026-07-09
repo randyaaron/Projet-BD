@@ -42,8 +42,8 @@ Route::prefix('legacy')->group(function () {
     Route::post('/auth/login-parent', [LegacyAuthController::class, 'loginParent']);
 
 
-    // Lecture globale: super admin, admin, directeur, secretaire, fondateur
-    Route::middleware('legacy.typeadmin:SUPER_ADMIN,ADMIN,DIRECTEUR,SECRETAIRE,FONDATEUR')->group(function () {
+    // Lecture globale: super admin, admin, directeur, secretaire, fondateur, root
+    Route::middleware('legacy.typeadmin:SUPER_ADMIN,ADMIN,DIRECTEUR,SECRETAIRE,FONDATEUR,ROOT')->group(function () {
         Route::get('/eleves', [LegacyStudentController::class, 'index']);
         Route::get('/paiements', [LegacyPaymentController::class, 'index']);
         
@@ -70,6 +70,23 @@ Route::prefix('legacy')->group(function () {
         Route::get('/discipline', [LegacyDisciplineController::class, 'index']);
         Route::get('/messages', [LegacyMessageController::class, 'index']);
         Route::get('/utilisateurs', [LegacyUserController::class, 'index']);
+        // Prochain matricule disponible (auto-incrémenté avec préfixe année)
+        Route::get('/eleves/next-matricule', function () {
+            $year = date('Y');
+            $prefix = intval($year . '0001'); // ex: 20260001
+            // Trouver le plus grand matricule dans la plage de l'année courante
+            $maxThisYear = DB::table('Eleve')
+                ->where('matricule', '>=', intval($year . '0000'))
+                ->where('matricule', '<=', intval($year . '9999'))
+                ->max('matricule');
+            if ($maxThisYear) {
+                $next = $maxThisYear + 1;
+            } else {
+                // Pas encore de matricule cette année : commencer à AAAA0001
+                $next = $prefix;
+            }
+            return response()->json(['matricule' => $next]);
+        });
     });
 
     // Inscriptions et paiements: admin/directeur/secretaire/super admin
@@ -86,17 +103,23 @@ Route::prefix('legacy')->group(function () {
         // Créer une pré-inscription (Intendant)
         Route::post('/pre-inscriptions', function (Illuminate\Http\Request $request) {
             $data = $request->validate([
-                'nom'           => 'required|string',
-                'prenom'        => 'required|string',
-                'date_naissance'=> 'nullable|date',
-                'lieu_naissance'=> 'nullable|string',
-                'sexe'          => 'nullable|integer',
-                'parent_nom'    => 'nullable|string',
-                'montant_verse' => 'required|numeric|min:0',
-                'id_mode'       => 'nullable|integer',
-                'commentaire'   => 'nullable|string',
-                'date_paiement' => 'nullable|date',
-                'photo'         => 'nullable|image|max:2048', // 2MB max
+                'nom'             => 'required|string',
+                'prenom'          => 'required|string',
+                'date_naissance'  => 'nullable|date',
+                'lieu_naissance'  => 'nullable|string',
+                'sexe'            => 'nullable|integer',
+                'parent_nom'      => 'nullable|string',
+                'parent_prenom'   => 'nullable|string',
+                'parent_email'    => 'nullable|email',
+                'parent_mobile'   => 'nullable|string',
+                'id_classe'       => 'nullable|integer',
+                'section'         => 'nullable|string|in:francophone,anglophone',
+                'montant_verse'   => 'required|numeric|min:0',
+                'id_mode'         => 'nullable|integer',
+                'commentaire'     => 'nullable|string',
+                'date_paiement'   => 'nullable|date',
+                'photo'           => 'nullable|image|max:2048',
+                'parent_photo'    => 'nullable|image|max:2048',
             ]);
 
             $photoUrl = null;
@@ -105,21 +128,33 @@ Route::prefix('legacy')->group(function () {
                 $photoUrl = '/storage/' . $path;
             }
 
+            $parentPhotoUrl = null;
+            if ($request->hasFile('parent_photo')) {
+                $path = $request->file('parent_photo')->store('photos_profils', 'public');
+                $parentPhotoUrl = '/storage/' . $path;
+            }
+
             $id = DB::table('pre_inscriptions')->insertGetId([
-                'nom'            => strtoupper(trim($data['nom'])),
-                'prenom'         => ucfirst(trim($data['prenom'])),
-                'date_naissance' => $data['date_naissance'] ?? null,
-                'lieu_naissance' => $data['lieu_naissance'] ?? null,
-                'sexe'           => $data['sexe'] ?? 1,
-                'parent_nom'     => $data['parent_nom'] ?? null,
-                'montant_verse'  => $data['montant_verse'],
-                'id_mode'        => $data['id_mode'] ?? 1,
-                'commentaire'    => $data['commentaire'] ?? "Frais d'inscription",
-                'date_paiement'  => $data['date_paiement'] ?? now()->toDateString(),
-                'photo_url'      => $photoUrl,
-                'statut'         => 'en_attente',
-                'created_at'     => now(),
-                'updated_at'     => now()
+                'nom'               => strtoupper(trim($data['nom'])),
+                'prenom'            => ucfirst(trim($data['prenom'])),
+                'date_naissance'    => $data['date_naissance'] ?? null,
+                'lieu_naissance'    => $data['lieu_naissance'] ?? null,
+                'sexe'              => $data['sexe'] ?? 1,
+                'parent_nom'        => $data['parent_nom'] ?? null,
+                'parent_prenom'     => $data['parent_prenom'] ?? null,
+                'parent_email'      => $data['parent_email'] ?? null,
+                'parent_mobile'     => $data['parent_mobile'] ?? null,
+                'parent_photo_url'  => $parentPhotoUrl,
+                'id_classe'         => $data['id_classe'] ?? null,
+                'section'           => $data['section'] ?? null,
+                'montant_verse'     => $data['montant_verse'],
+                'id_mode'           => $data['id_mode'] ?? 1,
+                'commentaire'       => $data['commentaire'] ?? "Frais d'inscription",
+                'date_paiement'     => $data['date_paiement'] ?? now()->toDateString(),
+                'photo_url'         => $photoUrl,
+                'statut'            => 'en_attente',
+                'created_at'        => now(),
+                'updated_at'        => now()
             ]);
 
             return response()->json(['id' => $id, 'message' => 'Pré-inscription enregistrée.'], 201);
@@ -160,31 +195,41 @@ Route::prefix('legacy')->group(function () {
 
             if (!empty($preInsc->parent_nom)) {
                 $nomUp = strtoupper(trim($preInsc->parent_nom));
+                $prenomUp = ucfirst(trim($preInsc->parent_prenom ?? ''));
                 $existing = DB::table('Personne')->where('typePersonne', 3)->where('nom', $nomUp)->first();
                 if ($existing) {
                     $idPers = $existing->idPers;
+                    // Update with extra info if missing
+                    DB::table('Personne')->where('idPers', $idPers)->update([
+                        'prenom'    => $existing->prenom ?: $prenomUp,
+                        'mobile'    => $existing->mobile === '0' ? ($preInsc->parent_mobile ?? '0') : $existing->mobile,
+                        'email'     => $preInsc->parent_email ?? $existing->email ?? '',
+                        'photo_url' => ($preInsc->parent_photo_url && !$existing->photo_url) ? $preInsc->parent_photo_url : $existing->photo_url,
+                    ]);
                 } else {
                     $idPers = (DB::table('Personne')->max('idPers') ?? 0) + 1;
                     DB::table('Personne')->insert([
-                        'idPers' => $idPers,
-                        'nom' => $nomUp,
-                        'prenom' => '',
+                        'idPers'        => $idPers,
+                        'nom'           => $nomUp,
+                        'prenom'        => $prenomUp,
                         'dateNaissance' => '1970-01-01',
                         'lieuNaissance' => 'INDEFINI',
-                        'typePersonne' => 3,
-                        'mobile' => '0',
-                        'phone' => '0',
-                        'username' => '',
-                        'password' => '',
-                        'idAdmin' => 1,
+                        'typePersonne'  => 3,
+                        'mobile'        => $preInsc->parent_mobile ?? '0',
+                        'phone'         => $preInsc->parent_mobile ?? '0',
+                        'email'         => $preInsc->parent_email ?? '',
+                        'photo_url'     => $preInsc->parent_photo_url ?? null,
+                        'username'      => '',
+                        'password'      => '',
+                        'idAdmin'       => 1,
                     ]);
                 }
                 $idParent = (DB::table('Parents')->max('idParent') ?? 0) + 1;
                 DB::table('Parents')->insert([
                     'idParent' => $idParent,
-                    'idPers' => $idPers,
-                    'matricule' => $matricule,
-                    'idAdmin' => 1,
+                    'idPers'   => $idPers,
+                    'matricule'=> $matricule,
+                    'idAdmin'  => 1,
                     'isDelete' => 0,
                 ]);
             }
@@ -205,6 +250,26 @@ Route::prefix('legacy')->group(function () {
                 'url'              => 'INDEFINI',
                 'dateEnregistrer'  => now(),
             ]);
+
+            // Auto-assigner une salle à partir de la classe demandée
+            if (!empty($preInsc->id_classe)) {
+                // Trouver une salle active associée à cette classe
+                $salle = DB::table('Salle')
+                    ->where('idClasse', $preInsc->id_classe)
+                    ->where('actif', 1)
+                    ->first();
+                if ($salle) {
+                    DB::table('Frequente')->where('matricule', $matricule)->delete();
+                    $anneeFreq = DB::table('AnneeAcademique')->orderBy('idAnnee', 'desc')->value('idAnnee') ?? 1;
+                    DB::table('Frequente')->insert([
+                        'matricule' => $matricule,
+                        'idSalle'   => $salle->idSalle,
+                        'idAcademi' => $anneeFreq,
+                        'idAdmin'   => 1,
+                    ]);
+                }
+                // Si aucune salle n'est disponible, l'élève reste non assigné (pas d'entrée dans Frequente)
+            }
 
             // Marquer la pré-inscription comme validée
             DB::table('pre_inscriptions')->where('id', $id)->update([
@@ -261,10 +326,7 @@ Route::prefix('legacy')->group(function () {
         Route::delete('/titulaires/{id}', [LegacyTitulaireController::class, 'destroy']);
         Route::post('/matieres', [LegacyStructureController::class, 'createSubject']);
         Route::post('/messages', [LegacyMessageController::class, 'store']);
-        Route::post('/utilisateurs/admin', [LegacyUserController::class, 'createAdmin']);
-        Route::post('/utilisateurs/enseignant', [LegacyUserController::class, 'createEnseignant']);
-        Route::post('/utilisateurs/parent', [LegacyUserController::class, 'createParent']);
-        Route::patch('/utilisateurs/{id}/toggle', [LegacyUserController::class, 'toggleActif']);
+
         // Rechercher les élèves liés à un parent par son nom (pour auto-remplissage du modal)
         Route::get('/eleves/by-parent-name', function (Illuminate\Http\Request $request) {
             $nom = strtoupper(trim($request->input('nom', '')));
@@ -307,11 +369,29 @@ Route::prefix('legacy')->group(function () {
                 'parent'  => $parentData,
             ]);
         });
+
+        // Obtenir le parent lié à un élève spécifique
+        Route::get('/eleves/{matricule}/parent', function ($matricule) {
+            $parentInfo = DB::table('Parents')
+                ->join('Personne', 'Parents.idPers', '=', 'Personne.idPers')
+                ->where('Parents.matricule', $matricule)
+                ->where('Personne.typePersonne', 3)
+                ->select('Personne.idPers', 'Personne.nom', 'Personne.prenom', 'Personne.mobile', 'Personne.email')
+                ->first();
+            return response()->json(['parent' => $parentInfo]);
+        });
     });
 
     // Approbation enseignant: fondateur (ou super admin)
     Route::middleware('legacy.typeadmin:SUPER_ADMIN,FONDATEUR')->group(function () {
         Route::post('/enseignants/{id}/approve', [LegacyTeacherController::class, 'approveByFounder']);
+    });
+    // Gestion des utilisateurs : Root, Super Admin, Admin, Directeur, Secrétaire
+    Route::middleware('legacy.typeadmin:SUPER_ADMIN,ADMIN,DIRECTEUR,SECRETAIRE,ROOT')->group(function () {
+        Route::post('/utilisateurs/admin', [LegacyUserController::class, 'createAdmin']);
+        Route::post('/utilisateurs/enseignant', [LegacyUserController::class, 'createEnseignant']);
+        Route::post('/utilisateurs/parent', [LegacyUserController::class, 'createParent']);
+        Route::patch('/utilisateurs/{id}/toggle', [LegacyUserController::class, 'toggleActif']);
     });
 });
 

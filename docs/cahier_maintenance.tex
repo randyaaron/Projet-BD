@@ -4,6 +4,8 @@
 \usepackage[french]{babel}
 \usepackage[top=2.5cm,bottom=2.5cm,left=2.8cm,right=2.8cm,headheight=15pt]{geometry}
 \usepackage{xcolor,hyperref,titlesec,fancyhdr,booktabs,tabularx,enumitem,tcolorbox,lmodern,microtype,parskip,listings,float}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,calc}
 \tcbuselibrary{skins,breakable}
 
 \definecolor{primary}{RGB}{30,58,95}
@@ -77,7 +79,57 @@ Ce document contient des informations sensibles (architecture, accès, procédur
 
 \section{Vue d'ensemble}
 
-L'application est composée de trois couches distinctes :
+L'application est composée de trois couches distinctes (Modèle Client-Serveur SPA) :
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        box/.style={draw=primary, thick, fill=primary!5, rounded corners, align=center, inner sep=10pt},
+        title/.style={font=\bfseries\color{primary}},
+        arrow/.style={-{Stealth[length=2mm, width=2mm]}, thick, draw=accent}
+    ]
+
+    % Frontend
+    \node[box, text width=4cm] (frontend) {
+        \node[title] {Frontend (React/Vite)}\\[1ex]
+        \scriptsize
+        \begin{itemize}[leftmargin=*, nosep]
+            \item Interface Utilisateur (UI)
+            \item React Router (SPA)
+            \item State Management
+            \item Legacy API Fetcher
+        \end{itemize}
+    };
+    
+    % Backend
+    \node[box, text width=4.5cm, right=2cm of frontend] (backend) {
+        \node[title] {Backend (Laravel)}\\[1ex]
+        \scriptsize
+        \begin{itemize}[leftmargin=*, nosep]
+            \item API Routes (/api/legacy/*)
+            \item Middleware d'Auth
+            \item Contrôleurs Métier
+            \item ORM (Eloquent)
+        \end{itemize}
+    };
+    
+    % Database
+    \node[box, text width=3cm, right=2cm of backend] (database) {
+        \node[title] {Base de Données}\\[1ex]
+        \scriptsize
+        \begin{itemize}[leftmargin=*, nosep]
+            \item MySQL 8.x
+            \item ecole2026\_local
+        \end{itemize}
+    };
+
+    % Connections
+    \draw[arrow] (frontend.east) -- (backend.west) node[midway, above, font=\scriptsize\color{gray}, align=center] {Requêtes HTTP\\(JSON + X-Admin-Role)};
+    \draw[arrow] (backend.east) -- (database.west) node[midway, above, font=\scriptsize\color{gray}, align=center] {Requêtes SQL};
+
+    \end{tikzpicture}
+    \caption{Schéma d'architecture et interconnexion des modules}
+\end{figure}
 
 \begin{center}
 \begin{tabular}{lllll}\toprule

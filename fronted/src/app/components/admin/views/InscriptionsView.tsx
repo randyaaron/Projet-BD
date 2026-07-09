@@ -6,7 +6,13 @@ const API = 'http://localhost:8000/api/legacy';
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR').format(n) + ' F';
 const PAGE_SIZE = 10;
 
-const getAvatarUrl = (name: string, sexe: string) => {
+const getAvatarUrl = (el: any) => {
+  const photo = el.photoURL || el.photo_url;
+  if (photo && photo !== 'INDEFINI') {
+    return `http://localhost:8000${photo}`;
+  }
+  const name = el.nom || '';
+  const sexe = String(el.sexe) || '1';
   if (!name) return `/avatars/student_${sexe === '2' ? 'f' : 'm'}_1.png`;
   const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const num = (hash % 5) + 1;
@@ -25,6 +31,7 @@ export function InscriptionsView() {
   const [selectedPreInsc, setSelectedPreInsc] = useState<any>(null);
   const [matricule, setMatricule] = useState('');
   const [validating, setValidating] = useState(false);
+  const [matriculeLoading, setMatriculeLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -43,11 +50,21 @@ export function InscriptionsView() {
     finally { setLoading(false); }
   };
 
-  const openValidModal = (preInsc: any) => {
+  const openValidModal = async (preInsc: any) => {
     setSelectedPreInsc(preInsc);
     setMatricule('');
     setError('');
     setShowValidModal(true);
+    // Auto-générer le prochain matricule disponible
+    setMatriculeLoading(true);
+    try {
+      const res = await legacyFetch<any>(`${API}/eleves/next-matricule`);
+      if (res?.matricule) setMatricule(String(res.matricule));
+    } catch {
+      // Laisse l'admin saisir manuellement si l'API échoue
+    } finally {
+      setMatriculeLoading(false);
+    }
   };
 
   const handleValidate = async () => {
@@ -187,7 +204,7 @@ export function InscriptionsView() {
                     <td className="px-6 py-4 text-slate-400 font-medium">{el.matricule}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img src={getAvatarUrl(el.nom, String(el.sexe))} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        <img src={getAvatarUrl(el)} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200 bg-white" />
                         <span className="text-slate-900 font-bold">{el.nom} {el.prenom}</span>
                       </div>
                     </td>
@@ -332,15 +349,27 @@ export function InscriptionsView() {
 
             {/* Saisie du matricule */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Matricule à attribuer *</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-bold text-slate-700">Matricule à attribuer *</label>
+                {matriculeLoading ? (
+                  <span className="flex items-center gap-1 text-xs text-blue-500">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Génération...
+                  </span>
+                ) : (
+                  <span className="text-xs text-emerald-600 font-semibold">✓ Auto-généré — modifiable</span>
+                )}
+              </div>
               <input
                 type="number"
                 value={matricule}
                 onChange={e => setMatricule(e.target.value)}
-                placeholder="Ex: 20260201"
+                placeholder="Ex: 20260001"
                 autoFocus
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-slate-700 font-bold text-lg focus:border-blue-500 focus:ring-0 transition-colors"
+                disabled={matriculeLoading}
+                className={`w-full px-4 py-3 border-2 rounded-xl text-slate-700 font-bold text-lg focus:ring-0 transition-colors
+                  ${matriculeLoading ? 'border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed' : 'border-blue-300 bg-blue-50 focus:border-blue-500'}`}
               />
+              <p className="text-xs text-slate-400 mt-1">Format : Année + Numéro séquentiel (ex : 20260001, 20260002...)</p>
             </div>
 
             {error && (

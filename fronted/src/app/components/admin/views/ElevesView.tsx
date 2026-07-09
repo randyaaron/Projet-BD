@@ -45,12 +45,28 @@ export function ElevesView() {
     if (!currentClass || currentClass === 'Non assigné' || currentClass === 'Non assignée') {
       return assignedRooms;
     }
-    const prefix = currentClass.split('-')[0];
+    const isAngloClass = (lib: string) => /grade|form|class/i.test(lib);
+    const currentIsAnglo = isAngloClass(currentClass);
+    
+    // Extract base level (e.g. "SIL" from "SIL-A", "1ST GRADE" from "1ST GRADE A")
+    let baseLevel = currentClass.split('-')[0].trim();
+    if (currentIsAnglo) {
+      const match = currentClass.match(/^(\d+\s*[A-Za-z]+)/);
+      if (match) baseLevel = match[1].trim();
+    }
+
     const compatible = assignedRooms.filter((s: any) => {
       const sLib = s.classeLibelle || '';
-      return sLib.startsWith(prefix);
+      const sIsAnglo = isAngloClass(sLib);
+      // Section must match
+      if (sIsAnglo !== currentIsAnglo) return false;
+      // Level must match
+      return sLib.startsWith(baseLevel);
     });
-    return compatible.length > 0 ? compatible : assignedRooms;
+
+    if (compatible.length > 0) return compatible;
+    // Fallback to all rooms of the same section
+    return assignedRooms.filter((s: any) => isAngloClass(s.classeLibelle || '') === currentIsAnglo);
   };
 
   const handleAssignClass = async (matricule: number, idSalle: string) => {

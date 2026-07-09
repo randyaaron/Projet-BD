@@ -184,6 +184,7 @@ class LegacyAuthController extends Controller
             '2' => 'FONDATEUR',
             '3' => 'SECRETAIRE',
             '4' => 'ADMIN',
+            '5' => 'ROOT',
             default => null,
         };
     }

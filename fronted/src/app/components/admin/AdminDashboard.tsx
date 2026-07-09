@@ -94,6 +94,9 @@ export function AdminDashboard() {
     return <div className="p-6">Chargement des statistiques du tableau de bord...</div>;
   }
 
+  const rawRole = (localStorage.getItem('legacy_admin_type_label') || '').toLowerCase();
+  const hideRecentPayments = ['root', 'directeur'].includes(rawRole);
+
   const { stats, recentInscriptions, recentPaiements, weeklyAttendance, cycleData, totalsGender } = data || {};
 
   return (
@@ -258,48 +261,50 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <div>
-              <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Paiements récents</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Historique de la table Paiement</p>
-            </div>
-            <button className="flex items-center gap-1 text-blue-600 text-xs hover:text-blue-700 transition-colors" style={{ fontWeight: 600 }}>
-              Voir tout <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {recentPaiements?.map((p: any) => (
-              <div key={p.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  p.statut === 'payé' ? 'bg-emerald-50' : p.statut === 'partiel' ? 'bg-amber-50' : 'bg-red-50'
-                }`}>
-                  {p.statut === 'payé'
-                    ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    : p.statut === 'partiel'
-                    ? <Clock className="w-4 h-4 text-amber-600" />
-                    : <AlertCircle className="w-4 h-4 text-red-500" />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-800 text-sm truncate" style={{ fontWeight: 600 }}>{p.eleve}</p>
-                  <p className="text-slate-400 text-xs">{p.parent} · {p.date}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-slate-800 text-sm" style={{ fontWeight: 700 }}>{p.montant}</p>
-                  {statuts[p.statut] && (
-                  <span className={`text-xs ${statuts[p.statut].cls} px-2 py-0.5 rounded-full border`} style={{ fontWeight: 600 }}>
-                    {statuts[p.statut].label}
-                  </span>
-                  )}
-                </div>
+        {!hideRecentPayments && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-slate-900 text-sm" style={{ fontWeight: 700 }}>Paiements récents</h2>
+                <p className="text-slate-400 text-xs mt-0.5">Historique de la table Paiement</p>
               </div>
-            ))}
-            {!recentPaiements?.length && (
-              <div className="px-5 py-4 text-center text-sm text-slate-500">Aucun paiement récent.</div>
-            )}
+              <button className="flex items-center gap-1 text-blue-600 text-xs hover:text-blue-700 transition-colors" style={{ fontWeight: 600 }}>
+                Voir tout <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {recentPaiements?.map((p: any) => (
+                <div key={p.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    p.statut === 'payé' ? 'bg-emerald-50' : p.statut === 'partiel' ? 'bg-amber-50' : 'bg-red-50'
+                  }`}>
+                    {p.statut === 'payé'
+                      ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      : p.statut === 'partiel'
+                      ? <Clock className="w-4 h-4 text-amber-600" />
+                      : <AlertCircle className="w-4 h-4 text-red-500" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-800 text-sm truncate" style={{ fontWeight: 600 }}>{p.eleve}</p>
+                    <p className="text-slate-400 text-xs">{p.parent} · {p.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-800 text-sm" style={{ fontWeight: 700 }}>{p.montant}</p>
+                    {statuts[p.statut] && (
+                    <span className={`text-xs ${statuts[p.statut].cls} px-2 py-0.5 rounded-full border`} style={{ fontWeight: 600 }}>
+                      {statuts[p.statut].label}
+                    </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {!recentPaiements?.length && (
+                <div className="px-5 py-4 text-center text-sm text-slate-500">Aucun paiement récent.</div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
     </div>

@@ -25,8 +25,8 @@ export function ImpayesView() {
     finally { setLoading(false); }
   };
 
-  // Calculer les impayés: élèves dont le total payé < 75000 (frais inscription)
-  const FRAIS_INSCRIPTION = 75000;
+  // Calculer les impayés: élèves dont le total payé < 165000 (Inscription + 3 Tranches)
+  const TOTAL_SCOLARITE = 165000;
   const paiementParMatricule: Record<number, number> = {};
   paiements.forEach((p: any) => {
     paiementParMatricule[p.matricule] = (paiementParMatricule[p.matricule] || 0) + Number(p.montant);
@@ -34,7 +34,7 @@ export function ImpayesView() {
 
   const impayes = eleves.filter((e: any) => {
     const totalPaye = paiementParMatricule[e.matricule] || 0;
-    return totalPaye < FRAIS_INSCRIPTION;
+    return totalPaye < TOTAL_SCOLARITE;
   });
 
   const filtered = impayes.filter((e: any) =>
@@ -43,7 +43,7 @@ export function ImpayesView() {
 
   const totalDu = filtered.reduce((sum, e: any) => {
     const paye = paiementParMatricule[e.matricule] || 0;
-    return sum + Math.max(0, FRAIS_INSCRIPTION - paye);
+    return sum + Math.max(0, TOTAL_SCOLARITE - paye);
   }, 0);
 
   if (loading) return <div className="p-6 text-slate-500">Chargement…</div>;
@@ -53,7 +53,7 @@ export function ImpayesView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-slate-900" style={{ fontSize: '1.375rem', fontWeight: 700 }}>Impayés & Relances</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Élèves n'ayant pas encore payé les frais d'inscription (75 000 F)</p>
+          <p className="text-slate-500 text-sm mt-0.5">Élèves n'ayant pas encore soldé la scolarité totale (165 000 F)</p>
         </div>
         <button onClick={fetchAll} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 text-sm hover:bg-slate-50">
           <RefreshCw className="w-4 h-4" /> Actualiser
@@ -120,7 +120,7 @@ export function ImpayesView() {
             <tbody className="divide-y divide-slate-50">
               {filtered.map((e: any) => {
                 const paye = paiementParMatricule[e.matricule] || 0;
-                const reste = Math.max(0, FRAIS_INSCRIPTION - paye);
+                const reste = Math.max(0, TOTAL_SCOLARITE - paye);
                 return (
                   <tr key={e.matricule} className="hover:bg-red-50/30 transition-colors">
                     <td className="px-5 py-3 text-slate-400 text-xs font-mono">{e.matricule}</td>
@@ -130,7 +130,7 @@ export function ImpayesView() {
                     <td className="px-5 py-3 text-slate-500 text-xs">{e.sexe == 1 ? 'M' : 'F'}</td>
                     <td className="px-5 py-3">
                       <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-bold">
-                        {FRAIS_INSCRIPTION.toLocaleString('fr-FR')} F
+                        {TOTAL_SCOLARITE.toLocaleString('fr-FR')} F
                       </span>
                     </td>
                     <td className="px-5 py-3">

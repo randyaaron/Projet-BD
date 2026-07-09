@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.11.7)  7 JUL 2026 11:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.11.7)  9 JUL 2026 12:13
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -843,7 +843,7 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.37 ...3.8.2}Configuration}{11}{subsection.3.8.2}
+l.36 ...rline {4}Espace Enseignant}{18}{chapter.4}
                                                   % [1
 
 ])
@@ -861,33 +861,340 @@ Chapitre 1.
 
 ]
 Chapitre 2.
-LaTeX Font Info:    Trying to load font information for U+fontawesomefree2 on input line 216.
+LaTeX Font Info:    Trying to load font information for U+fontawesomefree2 on input line 206.
 (/usr/share/texlive/texmf-dist/tex/latex/fontawesome5/ufontawesomefree2.fd) [5
 
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free2.enc}] [6]
+{/usr/share/texlive/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free2.enc}]
 Chapitre 3.
-[7
+<images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png, id=339, 1927.2pt x 1084.05pt>
+File: images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png  used on input line 233.
+(pdftex.def)             Requested size: 394.35236pt x 221.81816pt.
+Package microtype Info: Character `029' is missing
+(microtype)             in font `T1/lmr/m/sc/12'.
+(microtype)             Ignoring protrusion settings for this character.
+[6
 
-] [8] [9{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}] [10] [11]
+
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.1}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.239 \subsection{Classes et Cycles}
+                                     <./images/Screenshot 2026-07-09 at 09-51-25 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png, id=349, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png  used on input line 253.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png, id=350, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png  used on input line 264.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [7
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.2}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.267 
+       <./images/Screenshot 2026-07-09 at 09-54-52 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png, id=358, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png  used on input line 282.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [8
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.3}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.291 A
+       ffiche l'ensemble des élèves inscrits avec leurs informations : nom...
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.4}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.291 A
+       ffiche l'ensemble des élèves inscrits avec leurs informations : nom... <./images/Screenshot 2026-07-09 at 09-55-01 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 09-55-12 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png, id=371, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png  used on input line 302.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png, id=372, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png  used on input line 308.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [9
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.5}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.317 \textbf{Processus d'inscription :}
+                                        
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.6}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.317 \textbf{Processus d'inscription :}
+                                         <./images/Screenshot 2026-07-09 at 09-52-55 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 09-53-32 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png, id=381, 1927.2pt x 1084.05pt>
+File: images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png  used on input line 328.
+(pdftex.def)             Requested size: 394.35236pt x 221.81816pt.
+File: images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png  used on input line 334.
+(pdftex.def)             Requested size: 394.35236pt x 221.81816pt.
+ [10
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.7}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.340 \end{tipbox}
+                  
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.8}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.340 \end{tipbox}
+                   <./images/Screenshot 2026-07-09 at 09-51-58 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png, id=394, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png  used on input line 351.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png, id=395, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png  used on input line 362.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [11
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.9}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.365 
+       <./images/Screenshot 2026-07-09 at 10-20-54 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png, id=402, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png  used on input line 374.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [12
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.10}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.388 \end{itemize}
+                   
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.11}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.388 \end{itemize}
+                    <./images/Screenshot 2026-07-09 at 11-19-07 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 11-21-27 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png, id=412, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png  used on input line 392.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png, id=413, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png  used on input line 403.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png, id=414, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png  used on input line 416.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [13{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.12}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.418 \end{figure}
+                  
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.13}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.418 \end{figure}
+                   <./images/Screenshot 2026-07-09 at 11-23-36 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 09-55-37 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png, id=424, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png  used on input line 434.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [14
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.14}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.444 A
+       ffiche l'historique de tous les paiements reçus (frais de scolarité...
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.15}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.444 A
+       ffiche l'historique de tous les paiements reçus (frais de scolarité... <./images/Screenshot 2026-07-09 at 11-27-36 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 11-27-44 Application de gestion scolaire.png>]
+<images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png, id=433, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png  used on input line 448.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png, id=434, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png  used on input line 459.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [15
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.16}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.464 \subsection{Messagerie}
+                             
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.17}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.464 \subsection{Messagerie}
+                              <./images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png> <./images/Screenshot 2026-07-09 at 11-34-21 Application de gestion scolaire.png>]
+File: images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-54-19 Application de gestion scolaire.png  used on input line 494.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png, id=443, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png  used on input line 500.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [16
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.18}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.503 
+      ] [17
+pdfTeX warning (ext4): destination with the same identifier (name{figure.3.19}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.509 \chapter
+              {Espace Enseignant} <./images/Screenshot 2026-07-09 at 09-54-31 Application de gestion scolaire.png>]
 Chapitre 4.
-[12
+<images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png, id=464, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png  used on input line 526.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+[18
 
-] [13]
+
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.1}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.534 ...on{Gestion des Élèves (vue Enseignant)}
+                                                   <./images/Screenshot 2026-07-09 at 09-56-56 Espace Enseignant Les Genies.png>]
+<images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png, id=472, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png  used on input line 569.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [19
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.2}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.575 ...Créer une Épreuve (Vue à développer)}
+                                                   <./images/Screenshot 2026-07-09 at 09-57-11 Espace Enseignant Les Genies.png>]
+<images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png, id=484, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png  used on input line 582.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png, id=485, 1860.9525pt x 1083.04625pt>
+File: images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png  used on input line 593.
+(pdftex.def)             Requested size: 394.35236pt x 229.49564pt.
+ [20
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.3}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.596 
+       <./images/Screenshot 2026-07-09 at 09-57-52 Espace Enseignant Les Genies.png>]
+<images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png, id=492, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png  used on input line 607.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [21
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.4}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.615 
+      
+pdfTeX warning (ext4): destination with the same identifier (name{figure.4.5}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.615 
+       <./images/Screenshot 2026-07-09 at 09-57-26 Espace Enseignant Les Genies.png> <./images/Screenshot 2026-07-09 at 12-00-29 Espace Enseignant Les Genies.png>] [22]
 Chapitre 5.
-[14
+<images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png, id=505, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png  used on input line 638.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+[23
 
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}] [15] [16]
+
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.1}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.645 L
+       a page «~Carnet de Notes~» affiche, pour chaque enfant, l'ensemble ... <./images/Screenshot 2026-07-09 at 09-58-34 Les Genies - Espace Parent.png>]
+<images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png, id=512, 1860.9525pt x 2547.5175pt>
+File: images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png  used on input line 663.
+(pdftex.def)             Requested size: 394.35236pt x 539.81459pt.
+ [24{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}] [25
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.2}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.673   \item L
+               e nom de l'enfant et le trimestre <./images/Screenshot 2026-07-09 at 09-59-29 Les Genies - Espace Parent.png>]
+<images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png, id=525, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png  used on input line 681.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+<images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png, id=526, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png  used on input line 705.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [26
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.3}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.708 
+       <./images/Screenshot 2026-07-09 at 09-58-51 Les Genies - Espace Parent.png>]
+<images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png, id=535, 1860.9525pt x 965.6075pt>
+File: images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png Graphic file (type png)
+<use images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png>
+Package pdftex.def Info: images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png  used on input line 734.
+(pdftex.def)             Requested size: 394.35236pt x 204.61057pt.
+ [27
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.4}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.737 
+       <./images/Screenshot 2026-07-09 at 09-59-11 Les Genies - Espace Parent.png>] [28
+pdfTeX warning (ext4): destination with the same identifier (name{figure.5.5}) has been already used, duplicate ignored
+<argument> ...shipout:D \box_use:N \l_shipout_box 
+                                                  \__shipout_drop_firstpage_...
+l.739 \chapter
+              {Questions Fréquentes} <./images/Screenshot 2026-07-09 at 09-59-41 Les Genies - Espace Parent.png>]
 Chapitre 6.
 
-Underfull \hbox (badness 1629) in paragraph at lines 578--578
+Underfull \hbox (badness 1629) in paragraph at lines 769--769
 []|\T1/lmr/m/n/12 (+20) Dans les op-tions d'im-pres-sion, ac-ti-ver
  []
 
-[17
+[29
 
 ]
 Chapitre 7.
-[18
+[30
 
 ] (./cahier_utilisation.aux)
  ***********
@@ -895,21 +1202,21 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
 Package rerunfilecheck Info: File `cahier_utilisation.out' has not changed.
-(rerunfilecheck)             Checksum: 16DA8832691CE48DB786FF09B4DCB5A2;8598.
+(rerunfilecheck)             Checksum: 9438FFF5506A284C3A9709BECA0E784A;9140.
  ) 
 Here is how much of TeX's memory you used:
- 32141 strings out of 474222
- 636618 string characters out of 5748733
+ 32421 strings out of 474222
+ 655113 string characters out of 5748733
  1937975 words of memory out of 5000000
- 53704 multiletter control sequences out of 15000+600000
- 617267 words of font info for 115 fonts, out of 8000000 for 9000
+ 53932 multiletter control sequences out of 15000+600000
+ 620537 words of font info for 121 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 83i,13n,93p,1234b,712s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</usr/share/texlive/texmf-dist/fonts/type1/public/fontawesome5/FontAwesome5Free-Solid.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb>
-Output written on cahier_utilisation.pdf (19 pages, 233595 bytes).
+ 83i,13n,93p,1234b,737s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/fontawesome5/FontAwesome5Free-Solid.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm/lmcsc10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmri12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb>
+Output written on cahier_utilisation.pdf (31 pages, 3304700 bytes).
 PDF statistics:
- 488 PDF objects out of 1000 (max. 8388607)
- 441 compressed objects within 5 object streams
- 110 named destinations out of 1000 (max. 500000)
- 33221 words of extra memory for PDF output out of 35830 (max. 10000000)
+ 652 PDF objects out of 1000 (max. 8388607)
+ 536 compressed objects within 6 object streams
+ 151 named destinations out of 1000 (max. 500000)
+ 35436 words of extra memory for PDF output out of 35830 (max. 10000000)
 

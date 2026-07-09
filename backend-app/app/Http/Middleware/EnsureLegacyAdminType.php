@@ -94,10 +94,11 @@ class EnsureLegacyAdminType
         // Support texte direct
         $textMap = [
             'SUPER_ADMIN' => 'SUPER_ADMIN',
-            'DIRECTEUR' => 'DIRECTEUR',
-            'FONDATEUR' => 'FONDATEUR',
-            'SECRETAIRE' => 'SECRETAIRE',
-            'ADMIN' => 'ADMIN',
+            'DIRECTEUR'   => 'DIRECTEUR',
+            'FONDATEUR'   => 'FONDATEUR',
+            'SECRETAIRE'  => 'SECRETAIRE',
+            'ADMIN'       => 'ADMIN',
+            'ROOT'        => 'ROOT',
         ];
         if (isset($textMap[$raw])) {
             return $textMap[$raw];
@@ -110,6 +111,7 @@ class EnsureLegacyAdminType
             '2' => 'FONDATEUR',
             '3' => 'SECRETAIRE',
             '4' => 'ADMIN',
+            '5' => 'ROOT',
             default => null,
         };
     }

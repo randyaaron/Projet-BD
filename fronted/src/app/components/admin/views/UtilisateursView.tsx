@@ -81,24 +81,49 @@ export function UtilisateursView() {
     return () => clearTimeout(t);
   }, [form.nom, modalType, searchParentByName]);
 
+  const handleSelectStudent = async (matricule: number, checked: boolean) => {
+    if (checked) {
+      setSelectedMatricules(prev => prev.filter(m => m !== matricule));
+    } else {
+      setSelectedMatricules(prev => [...prev, matricule]);
+      // If we are checking the first student, auto-fill parent info if it exists
+      if (selectedMatricules.length === 0) {
+        try {
+          const res: any = await legacyFetch(`${API}/eleves/${matricule}/parent`);
+          if (res.parent) {
+            setForm(prev => ({
+              ...prev,
+              idPers: String(res.parent.idPers),
+              nom: res.parent.nom,
+              prenom: res.parent.prenom || prev.prenom,
+              mobile: res.parent.mobile !== '0' ? res.parent.mobile : prev.mobile,
+              email: res.parent.email || prev.email,
+            }));
+            setParentSearchResult({ eleves: [], parent: res.parent });
+          }
+        } catch (e) { console.error(e); }
+      }
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); setSuccess('');
     setSubmitting(true);
     try {
       const endpoint = modalType === 'enseignant' ? 'enseignant' : modalType === 'admin' ? 'admin' : 'parent';
-      
+
       const formData = new FormData();
       formData.append('nom', form.nom);
       formData.append('mobile', form.mobile);
       formData.append('username', form.username);
       formData.append('password', form.password);
-      
+
       if (modalType === 'enseignant' || modalType === 'parent') {
         formData.append('prenom', form.prenom);
         formData.append('email', form.email);
       }
-      
+
       if (modalType === 'enseignant') {
         if (form.idCours) formData.append('idCours', form.idCours);
       } else if (modalType === 'parent') {
@@ -317,7 +342,7 @@ export function UtilisateursView() {
                 <img src={getAvatarUrl(selectedProfile, profileType)} alt="Profile" className="w-20 h-20 rounded-full border-4 border-white shadow-md bg-white object-cover" />
               </div>
             </div>
-            
+
             <div className="px-6 pt-12 pb-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -330,7 +355,7 @@ export function UtilisateursView() {
                   {selectedProfile.actif ? 'Actif' : 'Inactif'}
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mt-6">
                 <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                   <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">Nom d'utilisateur</p>
@@ -374,7 +399,7 @@ export function UtilisateursView() {
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Nom *</label>
                 <div className="relative">
-                  <input required value={form.nom} onChange={e => setForm({...form, nom: e.target.value, idPers: ''})} placeholder="DUPONT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                  <input required value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value, idPers: '' })} placeholder="DUPONT" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                   {searchingParent && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />}
                   {!searchingParent && modalType === 'parent' && <Search className="w-3.5 h-3.5 text-slate-300 absolute right-3 top-1/2 -translate-y-1/2" />}
                 </div>
@@ -391,31 +416,31 @@ export function UtilisateursView() {
               {modalType !== 'admin' && (
                 <div>
                   <label className="block text-xs text-slate-600 mb-1 font-semibold">Prénom *</label>
-                  <input required value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} placeholder="Jean" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                  <input required value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })} placeholder="Jean" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                 </div>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Mobile</label>
-                <input value={form.mobile} onChange={e => setForm({...form, mobile: e.target.value})} placeholder="6XXXXXXXX" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
+                <input value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} placeholder="6XXXXXXXX" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
               </div>
               {modalType !== 'admin' && (
                 <div>
                   <label className="block text-xs text-slate-600 mb-1 font-semibold">Email</label>
-                  <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="jean@exemple.cm" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
+                  <input type="text" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Ex: jean@exemple.cm ou aucune info" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none" />
                 </div>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Nom d'utilisateur (login) *</label>
-                <input required value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="jean.dupont" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                <input required value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="jean.dupont" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
               </div>
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Mot de passe *</label>
                 <div className="relative">
-                  <input required type={showPwd ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Min. 4 caractères" className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
+                  <input required type={showPwd ? 'text' : 'password'} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Min. 4 caractères" className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg text-sm bg-slate-50 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/30" />
                   <button type="button" onClick={() => setShowPwd(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
                     {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -426,7 +451,7 @@ export function UtilisateursView() {
             {modalType === 'admin' && (
               <div>
                 <label className="block text-xs text-slate-600 mb-1 font-semibold">Type d'administrateur</label>
-                <select value={form.typeAdmin} onChange={e => setForm({...form, typeAdmin: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
+                <select value={form.typeAdmin} onChange={e => setForm({ ...form, typeAdmin: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
                   <option value="2">Administration</option>
                   <option value="0">Intendant</option>
                   <option value="4">Directeur</option>
@@ -457,17 +482,7 @@ export function UtilisateursView() {
               </label>
             </div>
 
-            {modalType === 'enseignant' && (
-              <div>
-                <label className="block text-xs text-slate-600 mb-1 font-semibold">Cours principal enseigné</label>
-                <select value={form.idCours} onChange={e => setForm({...form, idCours: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:outline-none">
-                  <option value="">-- Sélectionner (optionnel) --</option>
-                  {cours.map((c: any) => (
-                    <option key={c.idCours} value={c.idCours}>{c.libelle} — {c.classeLibelle || 'Classe ?'} (coeff. {c.coefficient})</option>
-                  ))}
-                </select>
-              </div>
-            )}
+
 
             {modalType === 'parent' && (
               <div>
@@ -481,37 +496,26 @@ export function UtilisateursView() {
                 <div className="border border-slate-200 rounded-lg overflow-y-auto max-h-40 bg-slate-50">
                   {(() => {
                     let list = eleves;
-                    
-                    // Filtrage strict : si on a tapé un nom (>= 3 chars), 
-                    // on n'affiche QUE les élèves renvoyés par l'API (inscrits avec ce nom de parent)
-                    if (form.nom.trim().length >= 3) {
-                      list = parentSearchResult?.eleves || [];
-                    }
 
                     if (list.length === 0) {
                       return <div className="p-4 text-center text-sm text-slate-500">
-                        {form.nom.trim().length >= 3 
-                          ? `Aucun élève inscrit avec le nom de parent "${form.nom}".`
-                          : "Aucun élève."}
+                        Aucun élève disponible.
                       </div>;
                     }
 
                     return list.map((el: any) => {
                       const detected = parentSearchResult?.eleves?.some((pe: any) => pe.matricule === el.matricule);
-                      const checked  = selectedMatricules.includes(el.matricule);
+                      const checked = selectedMatricules.includes(el.matricule);
                       return (
                         <label
                           key={el.matricule}
-                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-white transition-colors border-b border-slate-100 last:border-0 ${
-                            detected ? 'bg-blue-50/60' : ''
-                          }`}
+                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-white transition-colors border-b border-slate-100 last:border-0 ${detected ? 'bg-blue-50/60' : ''
+                            }`}
                         >
                           <input
                             type="checkbox"
                             checked={checked}
-                            onChange={() => setSelectedMatricules(prev =>
-                              checked ? prev.filter(m => m !== el.matricule) : [...prev, el.matricule]
-                            )}
+                            onChange={() => handleSelectStudent(el.matricule, checked)}
                             className="w-4 h-4 accent-blue-600"
                           />
                           <div className="flex-1 min-w-0">
@@ -524,7 +528,7 @@ export function UtilisateursView() {
                     });
                   })()}
                 </div>                {selectedMatricules.length === 0 && (
-                  <p className="text-xs text-amber-500 mt-1">Optionnel — vous pouvez créer le compte sans lier d'élève maintenant</p>
+                  <p className="text-xs text-amber-500 mt-1"></p>
                 )}
               </div>
             )}

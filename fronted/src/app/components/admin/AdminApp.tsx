@@ -197,14 +197,18 @@ export function AdminApp({ onLogout }: AdminAppProps) {
   const rawRole = (localStorage.getItem('legacy_admin_type_label') || '').toLowerCase();
   
   let normalizedRole = rawRole;
-  if (rawRole === 'super_admin' || rawRole === '0') normalizedRole = 'root';
+  if (rawRole === 'super_admin') normalizedRole = 'superadmin';
+  else if (rawRole === 'root') normalizedRole = 'root';
+  else if (rawRole === '0') normalizedRole = 'superadmin'; // fallback numérique
   else if (rawRole === 'secretaire' || rawRole === '3') normalizedRole = 'intendant';
   else if (rawRole === 'admin' || rawRole === '4') normalizedRole = 'administration';
   else if (rawRole === 'directeur' || rawRole === '1') normalizedRole = 'directeur';
   else if (rawRole === 'fondateur' || rawRole === '2') normalizedRole = 'fondateur';
 
   let allowedItems: AdminView[] = [];
-  if (normalizedRole === 'root') {
+  if (normalizedRole === 'superadmin') {
+    allowedItems = navGroups.flatMap(g => g.items).map(i => i.id);
+  } else if (normalizedRole === 'root') {
     allowedItems = ['dashboard', 'utilisateurs', 'configuration', 'messagerie'];
   } else if (normalizedRole === 'intendant') {
     allowedItems = ['dashboard', 'paiements', 'impayes', 'configuration', 'messagerie'];
