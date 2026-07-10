@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     && mv composer.phar /usr/local/bin/composer
 
 WORKDIR /app
-COPY . .
+
+COPY backend-app/ .
 
 RUN composer install --no-dev --optimize-autoloader
 
