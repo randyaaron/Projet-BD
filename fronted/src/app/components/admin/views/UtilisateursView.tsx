@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Shield, UserCheck, Users, UserPlus, X, Loader2, Eye, EyeOff, Search, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 type Tab = 'admins' | 'enseignants' | 'parents';
 type ModalType = 'enseignant' | 'parent' | 'admin' | null;
@@ -28,7 +28,7 @@ export function UtilisateursView() {
 
   const getAvatarUrl = (user: any, type: 'enseignant' | 'parent' | 'admin') => {
     if (user.photo_url && user.photo_url !== 'INDEFINI') {
-      return `http://localhost:8000${user.photo_url}`;
+      return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${user.photo_url}`;
     }
     // Generate photorealistic African AI portraits
     if (type === 'enseignant' || type === 'parent') {

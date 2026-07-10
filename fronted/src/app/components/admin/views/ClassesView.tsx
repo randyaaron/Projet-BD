@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Trash2, School, X, Loader2, BookOpen } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const cycleColors: Record<string, { bg: string, text: string, border: string }> = {
   SIL: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200' },

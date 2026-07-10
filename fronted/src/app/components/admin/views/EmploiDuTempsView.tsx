@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Clock, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 const CRENEAUX = ['07:30', '08:30', '09:30', '10:00', '11:00', '12:00', '13:30', '14:30', '15:30', '16:30'];

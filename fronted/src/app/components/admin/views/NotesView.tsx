@@ -18,7 +18,7 @@ export function NotesView() {
       setLoading(true);
       setError('');
       try {
-        const res = await fetch(`http://localhost:8000/api/legacy/admin/moyennes`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/admin/moyennes`);
         if (!res.ok) throw new Error('Erreur de chargement des moyennes');
         const payload = await res.json();
         

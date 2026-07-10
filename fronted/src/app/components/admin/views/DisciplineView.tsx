@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, ShieldAlert, AlertTriangle, Plus, Trash2, User } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 export function DisciplineView() {
   const [eleves, setEleves] = useState<any[]>([]);

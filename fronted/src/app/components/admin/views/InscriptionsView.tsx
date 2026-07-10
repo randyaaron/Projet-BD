@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { UserPlus, CheckCircle2, Clock, ChevronLeft, ChevronRight, X, Loader2, AlertCircle, GraduationCap, Users, ClipboardList, KeyRound } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR').format(n) + ' F';
 const PAGE_SIZE = 10;
 
 const getAvatarUrl = (el: any) => {
   const photo = el.photoURL || el.photo_url;
   if (photo && photo !== 'INDEFINI') {
-    return `http://localhost:8000${photo}`;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${photo}`;
   }
   const name = el.nom || '';
   const sexe = String(el.sexe) || '1';

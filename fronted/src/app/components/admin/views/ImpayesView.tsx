@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { AlertCircle, FileText, Phone, Search, Loader2, RefreshCw } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 export function ImpayesView() {
   const [eleves, setEleves] = useState<any[]>([]);

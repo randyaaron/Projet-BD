@@ -19,7 +19,7 @@ export function AnneesView() {
   const fetchYears = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/legacy/annees');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/annees`);
       if (res.ok) {
         const data = await res.json();
         setYears(data.data || []);
@@ -39,7 +39,7 @@ export function AnneesView() {
     if (!newYear.libelle) return;
     try {
       setSaving(true);
-      const res = await fetch('http://localhost:8000/api/legacy/annees', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/annees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ libelle: newYear.libelle })

@@ -75,7 +75,7 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    legacyFetch<any>('http://localhost:8000/api/legacy/dashboard-stats')
+    legacyFetch<any>(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/dashboard-stats`)
       .then((res: any) => {
         setData(res);
         setLoading(false);

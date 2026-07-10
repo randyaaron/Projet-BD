@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Plus, Trash2, X, Loader2, UserCheck, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const getAvatarUrl = (name: string) => {
   if (!name) return '/avatars/teacher_m_1.png';

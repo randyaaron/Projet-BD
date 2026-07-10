@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, FileOutput, CheckCircle, Send, Eye, Loader2, RefreshCw, BookOpen, Printer, X } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function avgColor(avg: number): string {
@@ -364,7 +364,7 @@ export function BulletinsView() {
 
   const openBulletin = async (matricule: number) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/legacy/parent/bulletin-detail/${matricule}/annuel`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/parent/bulletin-detail/${matricule}/annuel`);
       if (!res.ok) throw new Error('Erreur de chargement du bulletin');
       const payload = await res.json();
       setSelectedBulletin(payload);

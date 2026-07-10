@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, BookOpen, X, Loader2, Trash2 } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const coefColor = (c: number) => {
   if (c >= 3) return 'bg-blue-50 text-blue-700 border-blue-200';

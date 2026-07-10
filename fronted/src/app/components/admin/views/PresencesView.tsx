@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, CheckCircle, XCircle, Clock, AlertTriangle, CalendarDays } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 export function PresencesView() {
   const [attendanceData, setAttendanceData] = useState<any[]>([]);

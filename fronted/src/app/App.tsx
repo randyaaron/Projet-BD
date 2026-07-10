@@ -16,10 +16,10 @@ export default function App() {
 
     if (role === 'teacher') {
       const uid = localStorage.getItem('user_id') || '';
-      window.location.href = `http://localhost:3001/teacher?userId=${uid}`;
+      window.location.href = `${import.meta.env.VITE_TEACHER_URL || 'http://localhost:3001'}/teacher?userId=${uid}`;
     } else if (role === 'parent') {
       const uid = localStorage.getItem('user_id') || '';
-      window.location.href = `http://localhost:3002/parent?userId=${uid}`;
+      window.location.href = `${import.meta.env.VITE_PARENT_URL || 'http://localhost:3002'}/parent?userId=${uid}`;
     }
   };
 

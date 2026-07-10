@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, CreditCard, X, Loader2, UserPlus, AlertCircle, CheckCircle2, UploadCloud, ChevronRight, ChevronLeft, Printer } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 const fmt = (n: number) => new Intl.NumberFormat('fr-FR').format(n) + ' F';
 
 const PAYMENT_TYPES = [

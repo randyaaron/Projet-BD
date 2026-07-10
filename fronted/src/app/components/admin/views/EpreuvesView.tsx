@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, FileText, Calendar, Clock } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const cycleColors: Record<string, string> = {
   CP: 'bg-blue-50 text-blue-700 border-blue-200',

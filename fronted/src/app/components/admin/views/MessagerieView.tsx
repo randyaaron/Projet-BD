@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Send, Users, UserCheck, MessageSquare, Search, X, Loader2, Plus } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 const typeLabels: Record<number, { label: string; cls: string }> = {
   0: { label: 'Général', cls: 'bg-slate-100 text-slate-600 border-slate-200' },

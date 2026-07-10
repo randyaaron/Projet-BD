@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, UserPlus, Eye, Trash2, ChevronLeft, ChevronRight, X, Loader2, Users, GraduationCap, MapPin, Calendar } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 const PAGE_SIZE = 10;
 
 
@@ -126,7 +126,7 @@ export function ElevesView() {
 
   const getAvatarUrl = (el: any) => {
     if (el.photoURL && el.photoURL !== 'INDEFINI') {
-      return `http://localhost:8000${el.photoURL}`;
+      return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${el.photoURL}`;
     }
     const isGirl = String(el.sexe) === '2';
     return isGirl ? '/avatars/african_girl_student.png' : '/avatars/african_boy_student.png';

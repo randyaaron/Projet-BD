@@ -19,7 +19,7 @@ export function TrimestresView() {
   const fetchTerms = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/legacy/trimestres');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/trimestres`);
       if (res.ok) {
         const data = await res.json();
         setTerms(data.data || []);
@@ -39,7 +39,7 @@ export function TrimestresView() {
     if (!newTerm.libelle) return;
     try {
       setSaving(true);
-      const res = await fetch('http://localhost:8000/api/legacy/trimestres', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy/trimestres`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ libelle: newTerm.libelle })

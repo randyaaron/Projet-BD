@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, CheckCircle2, XCircle, X, Loader2, DoorOpen, LayoutDashboard, MapPin } from 'lucide-react';
 import { legacyFetch } from '../../../lib/legacyApi';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 export function SallesView() {
   const [salles, setSalles] = useState<any[]>([]);
