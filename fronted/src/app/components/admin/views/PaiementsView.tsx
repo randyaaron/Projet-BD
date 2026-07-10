@@ -604,7 +604,7 @@ export function PaiementsView() {
                         <option key={c.idClasse} value={c.idClasse}>{c.libelle}</option>
                       ))}
                     </select>
-                    {form.section && <p className="text-xs text-blue-600 mt-1 font-medium">Section détectée : {form.section} — une salle sera assignée automatiquement.</p>}
+                    {form.section && <p className="text-xs text-blue-600 mt-1 font-medium"></p>}
                   </div>
                   {/* Photo élève */}
                   <div className="col-span-2">
