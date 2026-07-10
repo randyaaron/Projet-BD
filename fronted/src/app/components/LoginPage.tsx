@@ -177,7 +177,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     <div className="min-h-screen relative flex items-center justify-center px-4 py-8">
       <div className="absolute inset-0">
         <img
-          src="/Interior%20of%20a%20classroom%20with%20natural%20light%20AI%20generated.jpeg"
+          src="/classroom.jpeg"
           alt="Salle de classe primaire"
           className="absolute inset-0 w-full h-full object-cover"
         />

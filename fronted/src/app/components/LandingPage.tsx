@@ -19,7 +19,7 @@ export function LandingPage({ onNavigateToLogin }: LandingPageProps) {
         {/* Background Image & Overlay */}
         <div className="absolute inset-0">
           <img
-            src="/Interior%20of%20a%20classroom%20with%20natural%20light%20AI%20generated.jpeg"
+            src="/classroom.jpeg"
             alt="Intérieur de salle de classe"
             className="w-full h-full object-cover"
           />
