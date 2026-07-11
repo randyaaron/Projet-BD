@@ -4,11 +4,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        Schema::dropIfExists('sanctions');
+
         Schema::create('sanctions', function (Blueprint $table) {
             $table->id();
             $table->string('student_id'); // maps to Eleve.matricule (string)
@@ -19,9 +18,7 @@ return new class extends Migration
             $table->foreign('student_id')->references('matricule')->on('Eleve')->onDelete('cascade');
         });
     }
-    /**
-     * Reverse the migrations.
-     */
+
     public function down(): void
     {
         Schema::dropIfExists('sanctions');
