@@ -190,7 +190,7 @@ export function ParentLayoutInner({
                   <p className="text-xs text-amber-200 truncate">Parent</p>
                 </div>
                 <button
-                  onClick={() => { localStorage.removeItem('parent_user_id'); window.location.href = 'http://localhost:5173'; }}
+                  onClick={() => { localStorage.removeItem('parent_user_id'); window.location.href = process.env.NEXT_PUBLIC_MAIN_URL || 'http://localhost:5173'; }}
                   className="p-2 text-amber-200 hover:text-white hover:bg-amber-800 rounded-lg transition-colors"
                   title="Déconnexion"
                 >
