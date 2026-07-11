@@ -175,7 +175,7 @@ export function TeacherSidebar() {
             )}
             {!collapsed && (
               <button
-                onClick={() => window.location.href = 'http://localhost:5173'}
+                onClick={() => window.location.href = 'https://projet-bd-les-genies.vercel.app'}
                 className="flex h-8 w-8 items-center justify-center rounded-md text-emerald-300 transition-colors hover:bg-emerald-700 hover:text-white"
                 title="Déconnexion"
               >
