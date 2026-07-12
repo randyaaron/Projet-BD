@@ -21,7 +21,7 @@ function DashboardContent() {
   const fetchDashboard = useCallback(async (userId: string, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/legacy/teacher/dashboard/full/${userId}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/dashboard/full/${userId}`);
       const resData = await res.json();
       setData(resData);
     } catch (err) {

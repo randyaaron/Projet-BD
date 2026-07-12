@@ -62,7 +62,7 @@ function AbsencesContent() {
     const fetchContext = async () => {
       try {
         setFetching(true);
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/attendance/context/${uid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/attendance/context/${uid}`);
         if (res.status === 404) {
           const body = await res.json();
           setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
@@ -95,7 +95,7 @@ function AbsencesContent() {
     setLoadingMap(prev => ({ ...prev, [matricule]: true }));
 
     try {
-      const res = await fetch(`http://localhost:8000/api/legacy/teacher/attendance/student/${matricule}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/attendance/student/${matricule}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, date: selectedDate, status: newStatus })

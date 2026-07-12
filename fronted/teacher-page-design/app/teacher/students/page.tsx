@@ -85,7 +85,7 @@ function StudentsContent() {
       try {
         setLoading(true);
         // Fetch real student stats from the new endpoint
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/students/full/${uid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/students/full/${uid}`);
         if (res.status === 404) {
           const body = await res.json();
           setError(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');

@@ -24,7 +24,7 @@ export default function NewMessagePage() {
     const fetchParents = async () => {
       try {
         const token = localStorage.getItem('sanctum_token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/messages/parents`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}'}/api/teacher/messages/parents`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -50,7 +50,7 @@ export default function NewMessagePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('sanctum_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/messages`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}'}/api/teacher/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -47,7 +47,7 @@ function ScheduleContent() {
       }
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/dashboard/full/${uid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/dashboard/full/${uid}`);
         if (!res.ok) throw new Error('Erreur de réseau ou serveur.');
         const data = await res.json();
         setScheduleData(data.schedule || []);

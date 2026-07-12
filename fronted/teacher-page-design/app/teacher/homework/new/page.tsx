@@ -27,7 +27,7 @@ export default function NewHomeworkPage() {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem('sanctum_token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/classes`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}'}/api/teacher/classes`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -55,7 +55,7 @@ export default function NewHomeworkPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('sanctum_token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/teacher/assessments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}'}/api/teacher/assessments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

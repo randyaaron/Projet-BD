@@ -102,7 +102,7 @@ function HomeworkContent() {
     const fetchContext = async () => {
       try {
         setFetching(true);
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/context/${uid}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/context/${uid}`);
         if (res.status === 404) {
           const body = await res.json();
           setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
@@ -146,7 +146,7 @@ function HomeworkContent() {
 
     try {
       setSaving(true);
-      const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${uid}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/${uid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAss)
@@ -313,7 +313,7 @@ function HomeworkContent() {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${ass.id}/status`, {
+                                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/${ass.id}/status`, {
                                         method: 'PATCH',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ status: 'corrigée' })

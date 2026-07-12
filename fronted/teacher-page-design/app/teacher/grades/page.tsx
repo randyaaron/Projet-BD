@@ -75,7 +75,7 @@ function GradesContent() {
       try {
         setFetching(true);
         // Fetch base context (students, subjects, examen grades from Evaluation table)
-        const resCtx = await fetch(`http://localhost:8000/api/legacy/teacher/grades/context/${uid}?session_id=${selectedSessionId}&t=${Date.now()}`);
+        const resCtx = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/grades/context/${uid}?session_id=${selectedSessionId}&t=${Date.now()}`);
         if (resCtx.status === 404) {
           const body = await resCtx.json();
           setErrorMsg(body.error || 'Aucune classe assignée. Veuillez attendre une affectation.');
@@ -110,7 +110,7 @@ function GradesContent() {
         setExamenGradesMap(initExamenMap);
 
         // Fetch assessments from assessments table
-        const resAss = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/context/${uid}`);
+        const resAss = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/context/${uid}`);
         if (resAss.ok) {
           const assData = await resAss.json();
           setAssessments(assData.assessments || []);
@@ -137,7 +137,7 @@ function GradesContent() {
     const fetchAssessmentGrades = async () => {
       try {
         setFetchingGrades(true);
-        const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`);
         if (!res.ok) throw new Error('Erreur chargement notes');
         const data = await res.json();
         
@@ -197,7 +197,7 @@ function GradesContent() {
 
     try {
       setSaving(true);
-      const res = await fetch(`http://localhost:8000/api/legacy/teacher/grades/student/${selectedStudent.matricule}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/grades/student/${selectedStudent.matricule}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, grades: payload, session_id: selectedSessionId })
@@ -228,7 +228,7 @@ function GradesContent() {
 
     try {
       setSaving(true);
-      const res = await fetch(`http://localhost:8000/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/teacher/assessments/${selectedAssessmentId}/grades`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, grades: payload })
