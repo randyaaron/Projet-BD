@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-const API = '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy';
+const API = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy`;
 
 function DisciplineContent() {
   const searchParams = useSearchParams();
