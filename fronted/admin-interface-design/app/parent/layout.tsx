@@ -54,7 +54,7 @@ export function ParentLayoutInner({
     const userId = urlUserId || localStorage.getItem("parent_user_id")
     if (!userId) return
 
-    fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/parent/${userId}/dashboard`)
       .then(r => r.json())
       .then(data => {
         if (data?.parent) {

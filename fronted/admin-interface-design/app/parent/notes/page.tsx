@@ -6,7 +6,7 @@ import { BookOpen, Loader2, AlertCircle, TrendingUp, TrendingDown, Star, Calenda
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy';
 
 function getColorClass(note: number) {
   if (note >= 16) return 'bg-emerald-50 text-emerald-700 border-emerald-200';

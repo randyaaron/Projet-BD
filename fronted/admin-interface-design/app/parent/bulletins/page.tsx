@@ -7,7 +7,7 @@ import {
   ChevronRight, BookOpen, Shield, Award, User
 } from 'lucide-react';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function avgColor(avg: number): string {

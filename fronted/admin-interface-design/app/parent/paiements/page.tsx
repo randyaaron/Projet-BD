@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { CreditCard, CheckCircle, Loader2, AlertCircle, Wallet, Bell, Clock, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-const API = 'http://localhost:8000/api/legacy';
+const API = '${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy';
 
 // Hardcoded due dates for each tranche (day/month)
 // Tranche 1: Oct 15, Tranche 2: Jan 15, Tranche 3: Apr 15

@@ -41,12 +41,12 @@ function ParentDashboardContent() {
     
     if (userId) {
       if (typeof window !== 'undefined') localStorage.setItem('user_id', userId);
-      fetch(`http://localhost:8000/api/legacy/parent/${userId}/dashboard?t=${Date.now()}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/parent/${userId}/dashboard?t=${Date.now()}`)
         .then(res => res.json())
         .then(resData => {
           setData(resData);
           
-          fetch(`http://localhost:8000/api/legacy/parent/${userId}/bulletins?t=${Date.now()}`)
+          fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/legacy/parent/${userId}/bulletins?t=${Date.now()}`)
             .then(b => b.json())
             .then(bData => {
                 setBulletinsCount(bData.bulletins?.length || 0);
